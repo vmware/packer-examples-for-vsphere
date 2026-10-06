@@ -10,7 +10,7 @@
 
 // Guest Operating System Metadata
 vm_guest_os_name    = "oracle"
-vm_guest_os_version = "10.1"
+vm_guest_os_version = "10.2"
 
 // Virtual Machine Guest Operating System Setting
 vm_guest_os_type = "other6xLinux64Guest"
@@ -20,6 +20,6 @@ vm_firmware = "efi-secure"
 
 // Removable Media Settings
 iso_datastore_path       = "iso/linux/oracle-linux/10/amd64"
-iso_content_library_item = "OracleLinux-R10-U1-x86_64-dvd"
-iso_file                  = "OracleLinux-R10-U1-x86_64-dvd.iso"
+iso_content_library_item = "OracleLinux-R10-U2-x86_64-dvd"
+iso_file                  = "OracleLinux-R10-U2-x86_64-dvd.iso"
 
