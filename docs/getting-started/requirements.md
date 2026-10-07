@@ -31,9 +31,9 @@ The project is tested on the following operating systems for the Packer host [^1
 
 | Component                                                        | Version   | Description      | Resources                                                                                                               |
 | :--------------------------------------------------------------- | :-------- | :--------------- | :---------------------------------------------------------------------------------------------------------------------- |
-| :simple-packer: &nbsp;&nbsp; Packer                              | >= 1.15.0 | By HashiCorp     | [:fontawesome-brands-github:][packer-repo] &nbsp;&nbsp; [:material-library:][packer]                                    |
+| :simple-packer: &nbsp;&nbsp; Packer                              | >= 1.16.0 | By HashiCorp     | [:fontawesome-brands-github:][packer-repo] &nbsp;&nbsp; [:material-library:][packer]                                    |
 | :simple-hashicorp: &nbsp;&nbsp; Packer Plugin for Ansible        | >= 1.1.4  | By HashiCorp     | [:fontawesome-brands-github:][packer-plugin-ansible-repo] &nbsp;&nbsp; [:material-library:][packer-plugin-ansible]      |
-| :simple-hashicorp: &nbsp;&nbsp; Packer Plugin for VMware vSphere | >= 2.1.1  | By Broadcom      | [:fontawesome-brands-github:][packer-plugin-vsphere-repo] &nbsp;&nbsp; [:material-library:][packer-plugin-vsphere-docs] |
+| :simple-hashicorp: &nbsp;&nbsp; Packer Plugin for VMware vSphere | >= 2.5.0  | By Broadcom      | [:fontawesome-brands-github:][packer-plugin-vsphere-repo] &nbsp;&nbsp; [:material-library:][packer-plugin-vsphere-docs] |
 | :fontawesome-brands-git: &nbsp;&nbsp; Packer Plugin for Git      | >= 0.6.5  | Community Plugin | [:fontawesome-brands-github:][packer-plugin-git-repo] &nbsp;&nbsp; [:material-library:][packer-plugin-git-docs]         |
 
 ### Installation
