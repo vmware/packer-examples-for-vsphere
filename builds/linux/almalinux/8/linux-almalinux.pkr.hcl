@@ -11,11 +11,11 @@
 //  The Packer configuration.
 
 packer {
-  required_version = ">= 1.15.0"
+  required_version = ">= 1.16.0"
   required_plugins {
     vsphere = {
       source  = "github.com/vmware/vsphere"
-      version = ">= 2.1.1"
+      version = ">= 2.5.0"
     }
     ansible = {
       source  = "github.com/hashicorp/ansible"
