@@ -17,7 +17,7 @@ All examples are provided in the HashiCorp Configuration Language ("HCL").
 
 This project supports the following guest operating systems:
 
-## :material-linux: Linux Distributions
+## :fontawesome-brands-linux: Linux Distributions
 
 ::spantable::
 | Operating System                                           | Version | Customization: VMTools             | Customization: cloud-init          | Network: DHCP or Static            | Storage: Customize                 |
@@ -39,7 +39,7 @@ This project supports the following guest operating systems:
 | :simple-rockylinux: Rocky Linux @span                      | 10      | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} |
 |                                                            | 9       | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} |
 |                                                            | 8       | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} |
-| :simple-oracle: Oracle Linux @span                         | 10      | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} |
+| :fontawesome-brands-linux: Oracle Linux @span              | 10      | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} |
 |                                                            | 9       | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} |
 |                                                            | 8       | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} |
 | :fontawesome-brands-centos: CentOS Stream @span            | 10      | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} | :octicons-check-circle-16:{.green} |

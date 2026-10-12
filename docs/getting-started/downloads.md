@@ -26,7 +26,7 @@ Download the guest operating system ISOs using the download script (`./download.
 | :simple-rockylinux: Rocky Linux @span                       | 10        | :octicons-x-circle-16:{ .red }                                        |
 |                                                             | 9         | :octicons-check-circle-16:{ .green }                                  |
 |                                                             | 8         | :octicons-check-circle-16:{ .green }                                  |
-| :simple-oracle: Oracle Linux @span                          | 10        | :octicons-x-circle-16:{ .red }                                        |
+| :fontawesome-brands-linux: Oracle Linux @span               | 10        | :octicons-x-circle-16:{ .red }                                        |
 |                                                             | 9         | :octicons-check-circle-16:{ .green }                                  |
 |                                                             | 8         | :octicons-check-circle-16:{ .green }                                  |
 | :fontawesome-brands-centos: CentOS @span                    | 10 Stream | :octicons-check-circle-16:{ .green }                                  |
