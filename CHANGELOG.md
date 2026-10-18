@@ -11,7 +11,8 @@
   [#1044](https://github.com/vmware/packer-examples-for-vsphere/pull/1044)
 
 **Enhancement**:
-
+- Adds Ubuntu Server 26.04 LTS to the project.
+  [#1139](https://github.com/vmware/packer-examples-for-vsphere/pull/1139)
 - Adds Debian 13 to the project.
   [#1056](https://github.com/vmware/packer-examples-for-vsphere/pull/1056),
   [#1094](https://github.com/vmware/packer-examples-for-vsphere/pull/1094),

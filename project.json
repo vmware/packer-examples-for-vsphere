@@ -118,6 +118,31 @@
                         "url": "https://ubuntu.com"
                     },
                     "versions": {
+                        "26.04": [
+                            {
+                                "version": "26-04-LTS",
+                                "enabled": "true",
+                                "architectures": [
+                                    {
+                                        "architecture": "amd64",
+                                        "download_link": "https://releases.ubuntu.com/releases/26.04.1/ubuntu-26.04.1-live-server-amd64.iso",
+                                        "checksum_algorithm": "sha256",
+                                        "checksum": "https://releases.ubuntu.com/releases/26.04.1/SHA256SUMS"
+                                    }
+                                ],
+                                "build_files": [
+                                    {
+                                        "vsphere": "vsphere.pkrvars.hcl",
+                                        "build": "build.pkrvars.hcl",
+                                        "ansible": "ansible.pkrvars.hcl",
+                                        "proxy": "proxy.pkrvars.hcl",
+                                        "common": "common.pkrvars.hcl",
+                                        "network": "network.pkrvars.hcl",
+                                        "storage": "linux-storage.pkrvars.hcl"
+                                    }
+                                ]
+                            }
+                        ],
                         "24.04": [
                             {
                                 "version": "24-04-LTS",
