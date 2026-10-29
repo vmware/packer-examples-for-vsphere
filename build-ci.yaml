@@ -37,6 +37,12 @@ menu:
           var_files:
             - "network.pkrvars.hcl"
             - "linux-storage.pkrvars.hcl"
+      - entry: "Ubuntu Server 26.04 LTS"
+        build:
+          path: "builds/linux/ubuntu/26-04-lts/"
+          var_files:
+            - "network.pkrvars.hcl"
+            - "linux-storage.pkrvars.hcl"
       - entry: "Ubuntu Server 24.04 LTS"
         build:
           path: "builds/linux/ubuntu/24-04-lts/"
