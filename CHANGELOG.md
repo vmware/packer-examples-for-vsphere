@@ -98,6 +98,8 @@
   [#1153](https://github.com/vmware/packer-examples-for-vsphere/pull/1153)
 - Updates `required_versions` for `hashicorp/hcp` to `~> 0.115.0`.
   [#1155](https://github.com/vmware/packer-examples-for-vsphere/pull/1155)
+- Updates `required_versions` for `terraform` to `>= 1.16.0`.
+  [#1165](https://github.com/vmware/packer-examples-for-vsphere/pull/1165)
 - Updates Gomplate to `>= 5.3.1`.
   [#1158](https://github.com/vmware/packer-examples-for-vsphere/pull/1158)
 - Updates Ubuntu 24.04 LTS to 24.04.5 release.
