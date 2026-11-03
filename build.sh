@@ -772,7 +772,7 @@ select_build() {
     fi
 
     if [[ "$dist" == *"Red Hat"* ]]; then
-        rshm_vars=$(jq -r --arg os "$os" --arg dist "$dist" --arg version "$version" '.os[] | select(.name == $os) | .distributions[] | select(.description == $dist) | .versions | to_entries[] | .value[] | select(.version == $version) | .build_files[0].rshm' "$json_path")
+        rhsm_vars=$(jq -r --arg os "$os" --arg dist "$dist" --arg version "$version" '.os[] | select(.name == $os) | .distributions[] | select(.description == $dist) | .versions | to_entries[] | .value[] | select(.version == $version) | .build_files[0].rhsm' "$json_path")
     fi
 
     if [[ "$dist" == *"SUSE"* ]]; then
@@ -801,7 +801,7 @@ select_build() {
         eval "$command"
         ;;
     "Red Hat Enterprise Linux")
-        var_files=("vsphere_vars" "build_vars" "ansible_vars" "proxy_vars" "common_vars" "network_vars" "storage_vars" "rshm_vars" "BUILD_VARS")
+        var_files=("vsphere_vars" "build_vars" "ansible_vars" "proxy_vars" "common_vars" "network_vars" "storage_vars" "rhsm_vars" "BUILD_VARS")
         validate_linux_username "$config_path/build.pkrvars.hcl"
         printf "Starting the build of %s %s...\n\n" "$dist" "$version"
         command="packer build -force -on-error=ask $debug_option"

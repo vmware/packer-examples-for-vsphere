@@ -54,6 +54,8 @@
 
 **Chore**:
 
+- Renames the Red Hat Subscription Manager catalog key from `rshm` to `rhsm`.
+  [#1179](https://github.com/vmware/packer-examples-for-vsphere/pull/1179)
 - Updates the Windows Server editions in the documentation to Standard and Datacenter.
   [#1178](https://github.com/vmware/packer-examples-for-vsphere/pull/1178)
 - Updates the Oracle Linux 10 example guest operating system type to `oracleLinux9_64Guest`.
