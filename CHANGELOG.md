@@ -87,8 +87,9 @@
   `>= 0.6.7`.
   [#1079](https://github.com/vmware/packer-examples-for-vsphere/pull/1079),
   [#1138](https://github.com/vmware/packer-examples-for-vsphere/pull/1138)
-- Updates `required_versions` for `vmware/vsphere` to `>= 2.15.0`.
-  [#1102](https://github.com/vmware/packer-examples-for-vsphere/pull/1102)
+- Updates `required_versions` for `vmware/vsphere` to `>= 2.17.1`.
+  [#1102](https://github.com/vmware/packer-examples-for-vsphere/pull/1102),
+  [#1153](https://github.com/vmware/packer-examples-for-vsphere/pull/1153)
 - Updates Ubuntu 24.04 LTS to 24.04.5 release.
   [#1131](https://github.com/vmware/packer-examples-for-vsphere/pull/1131),
   [#1099](https://github.com/vmware/packer-examples-for-vsphere/pull/1099),
