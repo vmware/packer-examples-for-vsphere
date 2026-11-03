@@ -70,13 +70,6 @@ menu:
             - "network.pkrvars.hcl"
             - "linux-storage.pkrvars.hcl"
             - "rhsm.pkrvars.hcl"
-      - entry: "Red Hat Enterprise Linux 7"
-        build:
-          path: "builds/linux/rhel/7/"
-          var_files:
-            - "network.pkrvars.hcl"
-            - "linux-storage.pkrvars.hcl"
-            - "rhsm.pkrvars.hcl"
       - entry: "AlmaLinux OS 10"
         build:
           path: "builds/linux/almalinux/10/"

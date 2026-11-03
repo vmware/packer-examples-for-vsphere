@@ -6,6 +6,8 @@
 
 **Bug Fix**:
 
+- Removes the Red Hat Enterprise Linux 7 job from the CI configuration.
+  [#1173](https://github.com/vmware/packer-examples-for-vsphere/pull/1173)
 - Sets `communicator_port` to a number on the Rocky Linux 9 and 10 builds.
   [#1172](https://github.com/vmware/packer-examples-for-vsphere/pull/1172)
 - Prevents a duplicate `disable_vmware_customization` key in `cloud.cfg`.

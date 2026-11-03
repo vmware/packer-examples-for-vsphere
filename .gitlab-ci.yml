@@ -130,15 +130,6 @@ Red-Hat-Enterprise-Linux-8:
 
 ##############################################################################
 
-Red-Hat-Enterprise-Linux-7:
-    extends: .packer-build
-    variables:
-        INPUT_PATH: "$SCRIPT_PATH/builds/linux/rhel/7/"
-        BUILD_VARS: "linux-rhel-7.pkrvars.hcl"
-        EXTRA_VAR_FILES: "-var-file=$CONFIG_PATH/network.pkrvars.hcl -var-file=$CONFIG_PATH/linux-storage.pkrvars.hcl -var-file=$CONFIG_PATH/rhsm.pkrvars.hcl"
-
-##############################################################################
-
 AlmaLinux-OS-10:
     extends: .packer-build
     variables:
