@@ -29,7 +29,6 @@ This project supports the following guest operating systems:
 |                              | 4         |
 | Debian                       | 13        |
 |                              | 12        |
-|                              | 11        |
 | Ubuntu Server                | 26.04 LTS |
 |                              | 24.04 LTS |
 |                              | 22.04 LTS |

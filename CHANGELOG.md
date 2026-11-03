@@ -52,6 +52,8 @@
   [#1079](https://github.com/vmware/packer-examples-for-vsphere/pull/1079)
 - Updates `required_versions` for `hashicorp/vsphere` to `>= 2.15.0`.
   [#1102](https://github.com/vmware/packer-examples-for-vsphere/pull/1102)
+- Removes Debian 11 from the project.
+  On 31 August 2026, Debian 11 reached the end of long-term support.
 - Removes Ubuntu Server 20.04 from the project.
   On 31 May 2025, Ubuntu Server 20.04 reached the end of life.
   [#1040](https://github.com/vmware/packer-examples-for-vsphere/pull/1040)
