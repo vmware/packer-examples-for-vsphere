@@ -6,6 +6,8 @@
 
 **Bug Fix**:
 
+- Sets `communicator_port` to a number on the Rocky Linux 9 and 10 builds.
+  [#1172](https://github.com/vmware/packer-examples-for-vsphere/pull/1172)
 - Prevents a duplicate `disable_vmware_customization` key in `cloud.cfg`.
   [#1123](https://github.com/vmware/packer-examples-for-vsphere/pull/1123)
 - Replaces deprecated `gateway4` with `routes` in the Ubuntu cloud-init network

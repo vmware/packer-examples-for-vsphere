@@ -413,7 +413,7 @@ variable "communicator_proxy_password" {
 }
 
 variable "communicator_port" {
-  type        = string
+  type        = number
   description = "The port for the communicator protocol."
   default     = 22
 }
