@@ -53,9 +53,11 @@
   [#1083](https://github.com/vmware/packer-examples-for-vsphere/pull/1083),
   [#1150](https://github.com/vmware/packer-examples-for-vsphere/pull/1150)
 - Updates the tested operating system requirements to VMware Photon OS 5.0
-  (`amd64`), Ubuntu Server 26.04 (`amd64`), and macOS Tahoe (`arm64`).
+  (`amd64`), Ubuntu Server 26.04 (`amd64`), and macOS 27 (Golden Gate) and
+  26 (Tahoe) (`arm64`).
   [#1083](https://github.com/vmware/packer-examples-for-vsphere/pull/1083),
-  [#1150](https://github.com/vmware/packer-examples-for-vsphere/pull/1150)
+  [#1150](https://github.com/vmware/packer-examples-for-vsphere/pull/1150),
+  [#1159](https://github.com/vmware/packer-examples-for-vsphere/pull/1159)
 - Updates the Packer plugin and Terraform provider for VMware vSphere from the
   `hashicorp/vsphere` namespace to `vmware/vsphere`.
   [#1100](https://github.com/vmware/packer-examples-for-vsphere/pull/1100),

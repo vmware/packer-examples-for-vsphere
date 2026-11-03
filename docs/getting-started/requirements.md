@@ -21,11 +21,12 @@ The project is tested on the following platforms:
 The project is tested on the following operating systems for the Packer host [^1] :
 
 ::spantable::
-| Operating System   | Version | Architecture  |
-| :----------------- | :------ | :------------ |
-| VMware Photon OS   | 5.0     | `amd64`       |
-| Ubuntu Server      | 26.04   | `amd64`       |
-| macOS              | Tahoe   | `arm64`       |
+| Operating System   | Version          | Architecture  |
+| :----------------- | :--------------- | :------------ |
+| VMware Photon OS   | 5.0              | `amd64`       |
+| Ubuntu Server      | 26.04            | `amd64`       |
+| macOS              | 27 (Golden Gate) | `arm64`       |
+| macOS              | 26 (Tahoe)       | `arm64`       |
 ::end-spantable::
 
 ## :simple-packer: &nbsp; Packer
