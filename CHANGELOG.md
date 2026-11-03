@@ -74,10 +74,11 @@
 - Updates `required_versions` for `packer` to `>= 1.16.0`.
   [#1107](https://github.com/vmware/packer-examples-for-vsphere/pull/1107),
   [#1135](https://github.com/vmware/packer-examples-for-vsphere/pull/1135)
-- Updates `required_plugins` for `packer-plugin-vsphere` to `>= 2.5.0`.
+- Updates `required_plugins` for `packer-plugin-vsphere` to `>= 2.5.1`.
   [#1077](https://github.com/vmware/packer-examples-for-vsphere/pull/1077),
   [#1106](https://github.com/vmware/packer-examples-for-vsphere/pull/1106),
-  [#1136](https://github.com/vmware/packer-examples-for-vsphere/pull/1136)
+  [#1136](https://github.com/vmware/packer-examples-for-vsphere/pull/1136),
+  [#1156](https://github.com/vmware/packer-examples-for-vsphere/pull/1156)
 - Updates `required_versions` for `packer-plugin-ansible` to >= `1.1.6`.
   [#1078](https://github.com/vmware/packer-examples-for-vsphere/pull/1078),
   [#1137](https://github.com/vmware/packer-examples-for-vsphere/pull/1137)

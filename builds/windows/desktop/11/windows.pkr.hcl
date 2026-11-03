@@ -16,7 +16,7 @@ packer {
   required_plugins {
     vsphere = {
       source  = "github.com/vmware/vsphere"
-      version = ">= 1.3.0"
+      version = ">= 2.5.1"
     }
     git = {
       source  = "github.com/ethanmdavidson/git"

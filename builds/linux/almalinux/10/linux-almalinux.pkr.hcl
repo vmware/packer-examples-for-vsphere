@@ -15,7 +15,7 @@ packer {
   required_plugins {
     vsphere = {
       source  = "github.com/vmware/vsphere"
-      version = ">= 2.5.0"
+      version = ">= 2.5.1"
     }
     ansible = {
       source  = "github.com/hashicorp/ansible"
