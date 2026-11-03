@@ -142,6 +142,11 @@ menu:
           var_files:
             - "network.pkrvars.hcl"
             - "linux-storage.pkrvars.hcl"
+      - entry: "SUSE Linux Enterprise Server 16"
+        build:
+          path: "builds/linux/sles/16/"
+          var_files:
+            - "scc.pkrvars.hcl"
       - entry: "SUSE Linux Enterprise Server 15"
         build:
           path: "builds/linux/sles/15/"

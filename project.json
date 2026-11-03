@@ -644,6 +644,31 @@
                                     }
                                 ]
                             }
+                        ],
+                        "16": [
+                            {
+                                "version": "16",
+                                "enabled": "true",
+                                "architectures": [
+                                    {
+                                        "architecture": "amd64",
+                                        "download_link": "https://suse.com/download/sles/",
+                                        "checksum_algorithm": "sha256",
+                                        "checksum": ""
+                                    }
+                                ],
+                                "build_files": [
+                                    {
+                                        "vsphere": "vsphere.pkrvars.hcl",
+                                        "build": "build.pkrvars.hcl",
+                                        "ansible": "ansible.pkrvars.hcl",
+                                        "proxy": "proxy.pkrvars.hcl",
+                                        "common": "common.pkrvars.hcl",
+                                        "network": "network.pkrvars.hcl",
+                                        "scc": "scc.pkrvars.hcl"
+                                    }
+                                ]
+                            }
                         ]
                     }
                 },
