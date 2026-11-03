@@ -106,7 +106,7 @@ The following additional software packages must be installed on the operating sy
 | :----------------------------------------------------- |:----------|:---------------------------------------------------| :------------------------------ |
 | :simple-ansible: &nbsp;&nbsp; ansible-core             | >= 2.16   | Automation engine for IT infrastructure            | [:material-library:][ansible]   |
 | :fontawesome-brands-git: &nbsp;&nbsp; git              | >= 2.43.0 | Version control system for tracking changes        | [:material-library:][git]       |
-| :material-code-braces: &nbsp;&nbsp; gomplate           | >= 4.3.0  | Template renderer                                  | [:material-library:][gomplate]  |
+| :material-code-braces: &nbsp;&nbsp; gomplate           | >= 5.3.1  | Template renderer                                  | [:material-library:][gomplate]  |
 | :simple-json: &nbsp;&nbsp; jq                          | >= 1.8.3  | Command-line JSON parser                           | [:material-library:][jq]        |
 | :simple-terraform: &nbsp;&nbsp; terraform              | >= 1.10.0 | Infrastructure as Code (IaC) tool by HashiCorp     | [:material-library:][terraform] |
 | :fontawesome-solid-compact-disc: &nbsp;&nbsp; xorriso  | >= 1.5.6  | ISO filesystem images creator for Linux            | [:material-library:][xorriso]   |
@@ -133,7 +133,7 @@ The following additional software packages must be installed on the operating sy
     Gomplate
 
     ```shell
-    export GOMPLATE_VERSION="4.3.0"
+    export GOMPLATE_VERSION="5.3.1"
     wget -q https://github.com/hairyhenderson/gomplate/releases/download/v${GOMPLATE_VERSION}/gomplate_linux-amd64
     chmod +x gomplate_linux-amd64
     sudo mv gomplate_linux-amd64 /usr/local/bin/gomplate
@@ -154,7 +154,7 @@ The following additional software packages must be installed on the operating sy
     Gomplate:
 
     ```shell
-    export GOMPLATE_VERSION="4.3.0"
+    export GOMPLATE_VERSION="5.3.1"
     wget -q https://github.com/hairyhenderson/gomplate/releases/download/v${GOMPLATE_VERSION}/gomplate_linux-amd64
     chmod +x gomplate_linux-amd64
     sudo mv gomplate_linux-amd64 /usr/local/bin/gomplate

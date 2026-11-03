@@ -970,7 +970,7 @@
                     "documentation": "https://docs.gomplate.ca"
                 }
             },
-            "version_requirement": ">= 4.3.0"
+            "version_requirement": ">= 5.3.1"
         },
         {
             "name": "ansible",
