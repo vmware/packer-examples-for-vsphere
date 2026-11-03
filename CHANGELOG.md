@@ -54,6 +54,8 @@
 
 **Chore**:
 
+- Updates the Oracle Linux 10 example guest operating system type to `oracleLinux9_64Guest`.
+  [#1177](https://github.com/vmware/packer-examples-for-vsphere/pull/1177)
 - Updates the Windows image names in the FAQ to Windows 11.
   [#1175](https://github.com/vmware/packer-examples-for-vsphere/pull/1175)
 - Updates the build and download examples to Ubuntu Server 26.04.
