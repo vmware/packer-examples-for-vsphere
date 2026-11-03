@@ -100,6 +100,8 @@
   [#1155](https://github.com/vmware/packer-examples-for-vsphere/pull/1155)
 - Updates `required_versions` for `terraform` to `>= 1.16.0`.
   [#1165](https://github.com/vmware/packer-examples-for-vsphere/pull/1165)
+- Updates `required_versions` for `git` to `>= 2.53.0`.
+  [#1168](https://github.com/vmware/packer-examples-for-vsphere/pull/1168)
 - Updates Gomplate to `>= 5.3.1`.
   [#1158](https://github.com/vmware/packer-examples-for-vsphere/pull/1158)
 - Updates Ubuntu 24.04 LTS to 24.04.5 release.

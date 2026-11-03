@@ -988,7 +988,7 @@
                 "name": "git",
                 "url": "https://git-scm.com/"
             },
-            "version_requirement": ">= 2.43.0"
+            "version_requirement": ">= 2.53.0"
         }
     ]
 }

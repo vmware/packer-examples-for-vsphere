@@ -92,7 +92,7 @@ The following additional software packages must be installed on the operating sy
 | Package                                                | Version   | Description                                        | Resources                       |
 | :----------------------------------------------------- |:----------|:---------------------------------------------------| :------------------------------ |
 | :simple-ansible: &nbsp;&nbsp; ansible-core             | >= 2.16   | Automation engine for IT infrastructure            | [:material-library:][ansible]   |
-| :fontawesome-brands-git: &nbsp;&nbsp; git              | >= 2.43.0 | Version control system for tracking changes        | [:material-library:][git]       |
+| :fontawesome-brands-git: &nbsp;&nbsp; git              | >= 2.53.0 | Version control system for tracking changes        | [:material-library:][git]       |
 | :material-code-braces: &nbsp;&nbsp; gomplate           | >= 5.3.1  | Template renderer                                  | [:material-library:][gomplate]  |
 | :simple-json: &nbsp;&nbsp; jq                          | —         | Command-line JSON parser                           | [:material-library:][jq]        |
 | :simple-terraform: &nbsp;&nbsp; terraform              | >= 1.16.0 | Infrastructure as Code (IaC) tool by HashiCorp     | [:material-library:][terraform] |
