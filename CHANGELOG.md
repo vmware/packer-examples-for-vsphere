@@ -7,6 +7,7 @@
 **Bug Fix**:
 
 - Corrects Rocky Linux 10 and 9 ISO filenames to the published images.
+  [#1148](https://github.com/vmware/packer-examples-for-vsphere/pull/1148)
 - Increases the Windows Recovery Environment (Windows RE) partition size for
   Windows Server 2025 builds to accommodate version storage requirements.
   [#1044](https://github.com/vmware/packer-examples-for-vsphere/pull/1044)
@@ -21,6 +22,7 @@
   are included in OVF exports.
   [#1047](https://github.com/vmware/packer-examples-for-vsphere/pull/1047)
 - Updates `common_vm_version` from `19` to `21` to.
+  [#1086](https://github.com/vmware/packer-examples-for-vsphere/pull/1086)
 
 **Chore**:
 
@@ -55,6 +57,7 @@
   [#1102](https://github.com/vmware/packer-examples-for-vsphere/pull/1102)
 - Removes Debian 11 from the project.
   On 31 August 2026, Debian 11 reached the end of long-term support.
+  [#1147](https://github.com/vmware/packer-examples-for-vsphere/pull/1147)
 - Removes Ubuntu Server 20.04 from the project.
   On 31 May 2025, Ubuntu Server 20.04 reached the end of life.
   [#1040](https://github.com/vmware/packer-examples-for-vsphere/pull/1040)
@@ -64,11 +67,13 @@
 - Updates Ubuntu 24.04 LTS to 24.04.3 release.
   [#1099](https://github.com/vmware/packer-examples-for-vsphere/pull/1099)
 - Updates Debian 13 to 13.7 release.
+  [#1145](https://github.com/vmware/packer-examples-for-vsphere/pull/1145)
 - Updates Debian 12 to 12.15 release.
+  [#1146](https://github.com/vmware/packer-examples-for-vsphere/pull/1146)
 - Updates Debian 12 to 12.12 release.
   [#1095](https://github.com/vmware/packer-examples-for-vsphere/pull/1095)
 - Updates SLES 15 to 15.7 release.
-  [#1050](https://github.com/vmware/packer-examples-for-vsphere/pull/1050)
+  [#1050](https://github.com/vmware/packer-examples-for-vsphere/pull/1050), [#1149](https://github.com/vmware/packer-examples-for-vsphere/pull/1149)
 - Updates Red Hat Enterprise Linux 9 to 9.7 release.
   [#1081](https://github.com/vmware/packer-examples-for-vsphere/pull/1081)
 - Updates AlmaLinux 9 to 9.7 release.
@@ -78,9 +83,11 @@
 - Updates Oracle Linux 9 to 9.7 release.
   [#1081](https://github.com/vmware/packer-examples-for-vsphere/pull/1081)
 - Updates Fedora Server to release 45.
+  [#1144](https://github.com/vmware/packer-examples-for-vsphere/pull/1144)
 - Update to the documentation to clarify privilege naming. The change updates
   the privilege description for creating snapshots to use `Snapshot Management`
   instead of `State`, making the documentation more accurate for vSphere 8+.
+  [#1090](https://github.com/vmware/packer-examples-for-vsphere/pull/1090)
 - Removes the use of `awk` commands that printed the installed versions of
   supporting components.
   [#1089](https://github.com/vmware/packer-examples-for-vsphere/pull/1089)
