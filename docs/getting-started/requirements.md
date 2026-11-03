@@ -94,8 +94,8 @@ The following additional software packages must be installed on the operating sy
 | :simple-ansible: &nbsp;&nbsp; ansible-core             | >= 2.16   | Automation engine for IT infrastructure            | [:material-library:][ansible]   |
 | :fontawesome-brands-git: &nbsp;&nbsp; git              | >= 2.43.0 | Version control system for tracking changes        | [:material-library:][git]       |
 | :material-code-braces: &nbsp;&nbsp; gomplate           | >= 5.3.1  | Template renderer                                  | [:material-library:][gomplate]  |
-| :simple-json: &nbsp;&nbsp; jq                          | >= 1.8.3  | Command-line JSON parser                           | [:material-library:][jq]        |
-| :simple-terraform: &nbsp;&nbsp; terraform              | >= 1.10.0 | Infrastructure as Code (IaC) tool by HashiCorp     | [:material-library:][terraform] |
+| :simple-json: &nbsp;&nbsp; jq                          | —         | Command-line JSON parser                           | [:material-library:][jq]        |
+| :simple-terraform: &nbsp;&nbsp; terraform              | >= 1.16.0 | Infrastructure as Code (IaC) tool by HashiCorp     | [:material-library:][terraform] |
 | :fontawesome-solid-compact-disc: &nbsp;&nbsp; xorriso  | >= 1.5.6  | ISO filesystem images creator for Linux            | [:material-library:][xorriso]   |
 
 ### Installation
