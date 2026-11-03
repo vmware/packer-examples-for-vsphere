@@ -61,6 +61,7 @@
 - Updates Ubuntu 24.04 LTS to 24.04.3 release.
   [#1099](https://github.com/vmware/packer-examples-for-vsphere/pull/1099)
 - Updates Debian 13 to 13.7 release.
+- Updates Debian 12 to 12.15 release.
 - Updates Debian 12 to 12.12 release.
   [#1095](https://github.com/vmware/packer-examples-for-vsphere/pull/1095)
 - Updates SLES 15 to 15.7 release.
