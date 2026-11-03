@@ -54,6 +54,8 @@
 
 **Chore**:
 
+- Updates the Windows Server editions in the documentation to Standard and Datacenter.
+  [#1178](https://github.com/vmware/packer-examples-for-vsphere/pull/1178)
 - Updates the Oracle Linux 10 example guest operating system type to `oracleLinux9_64Guest`.
   [#1177](https://github.com/vmware/packer-examples-for-vsphere/pull/1177)
 - Updates the Windows image names in the FAQ to Windows 11.

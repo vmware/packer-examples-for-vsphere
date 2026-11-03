@@ -52,9 +52,9 @@ This project supports the following guest operating systems:
 ::spantable::
 | Operating System                                            | Version       | Editions                 | Experience    |
 | :---                                                        | :---          | :---                     | :---          |
-| :fontawesome-brands-windows: Microsoft Windows Server @span | 2025 @span    | Standard, Enterprise     | Core, Desktop |
-|                                                             | 2022 @span    | Standard, Enterprise     | Core, Desktop |
-|                                                             | 2019 @span    | Standard, Enterprise     | Core, Desktop |
+| :fontawesome-brands-windows: Microsoft Windows Server @span | 2025 @span    | Standard, Datacenter     | Core, Desktop |
+|                                                             | 2022 @span    | Standard, Datacenter     | Core, Desktop |
+|                                                             | 2019 @span    | Standard, Datacenter     | Core, Desktop |
 | :fontawesome-brands-windows: Microsoft Windows @span        | 11 @span      | Professional, Enterprise | -             |
 ::end-spantable::
 
