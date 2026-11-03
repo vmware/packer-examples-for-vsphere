@@ -56,6 +56,8 @@
 
 - Updates the Windows image names in the FAQ to Windows 11.
   [#1175](https://github.com/vmware/packer-examples-for-vsphere/pull/1175)
+- Updates the build and download examples to Ubuntu Server 26.04.
+  [#1176](https://github.com/vmware/packer-examples-for-vsphere/pull/1176)
 - Updates the tested platform versions to include VMware vSphere 9.1, 9.0, and
   8.0 Update 3h or later.
   [#1083](https://github.com/vmware/packer-examples-for-vsphere/pull/1083),

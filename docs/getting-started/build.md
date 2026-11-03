@@ -55,9 +55,9 @@ icon: octicons/play-24
       ```shell
       Select a version:
 
-      1: Ubuntu Server 24.04 LTS
-      2: Ubuntu Server 22.04 LTS
-      3: Ubuntu Server 20.04 LTS
+      1: Ubuntu Server 26.04
+      2: Ubuntu Server 24.04
+      3: Ubuntu Server 22.04
 
       Enter b to go back, or q to quit.
       ```
@@ -65,10 +65,10 @@ icon: octicons/play-24
 5. The build will start.
 
       ```shell
-      Building a Ubuntu Server 24.04 LTS virtual machine image for VMware vSphere...
+      Building a Ubuntu Server 26.04 LTS virtual machine image for VMware vSphere...
 
       Initializing HashiCorp Packer and required plugins...
-      Starting the build of Ubuntu Server 24.04 LTS...
+      Starting the build of Ubuntu Server 26-04-LTS...
       vsphere-iso.linux-ubuntu: output will be in this color.
       ```
 
@@ -83,14 +83,14 @@ You can also run the build script using command-line options to specify the oper
 
 #### Examples:
 
-- Build an Ubuntu Server 24.04 LTS image:
+- Build an Ubuntu Server 26.04 LTS image:
 
 ```shell
-./build.sh --os "Linux" --dist "Ubuntu Server" --version "24.04 LTS" --auto-continue
+./build.sh --os "Linux" --dist "Ubuntu Server" --version "26.04" --auto-continue
 ```
 
 ???+ note "Info"
-    This will start the build process for Ubuntu Server 24.04 LTS without any user prompts.
+    This will start the build process for Ubuntu Server 26.04 LTS without any user prompts.
 
 - Build a Windows Server 2022 Standard edition image:
 
