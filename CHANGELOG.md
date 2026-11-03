@@ -77,9 +77,10 @@
   [#1160](https://github.com/vmware/packer-examples-for-vsphere/pull/1160)
 - Updates `chocolatey` to `2.6.0`.
   [#1109](https://github.com/vmware/packer-examples-for-vsphere/pull/1109)
-- Updates `required_versions` for `packer` to `>= 1.16.0`.
+- Updates `required_versions` for `packer` to `>= 1.16.2`.
   [#1107](https://github.com/vmware/packer-examples-for-vsphere/pull/1107),
-  [#1135](https://github.com/vmware/packer-examples-for-vsphere/pull/1135)
+  [#1135](https://github.com/vmware/packer-examples-for-vsphere/pull/1135),
+  [#1163](https://github.com/vmware/packer-examples-for-vsphere/pull/1163)
 - Updates `required_plugins` for `packer-plugin-vsphere` to `>= 2.5.1`.
   [#1077](https://github.com/vmware/packer-examples-for-vsphere/pull/1077),
   [#1106](https://github.com/vmware/packer-examples-for-vsphere/pull/1106),
