@@ -523,7 +523,7 @@ build {
     extra_arguments = [
       "--extra-vars", "use_proxy=false",
       "--extra-vars", "ansible_connection=winrm",
-      "--extra-vars", "ansible_user=${var.build_username}",
+      "--extra-vars", "ansible_user='${var.build_username}'",
       "--extra-vars", "ansible_password='${var.build_password}'",
       "--extra-vars", "ansible_port='${var.communicator_port}'",
       "--extra-vars", "build_username='${var.build_username}'",
