@@ -62,15 +62,19 @@
   `hashicorp/vsphere` namespace to `vmware/vsphere`.
   [#1100](https://github.com/vmware/packer-examples-for-vsphere/pull/1100),
   [#1101](https://github.com/vmware/packer-examples-for-vsphere/pull/1101)
-- Updates Ansible `community.general` collection to `12.4.0`.
+- Updates Ansible `community.general` collection to `14.0.0`.
   [#1108](https://github.com/vmware/packer-examples-for-vsphere/pull/1108),
-  [#1097](https://github.com/vmware/packer-examples-for-vsphere/pull/1097)
-- Updates Ansible `ansible.posix` collection to `2.1.0`.
-  [#1097](https://github.com/vmware/packer-examples-for-vsphere/pull/1097)
-- Updates Ansible `ansible.windows` collection to `3.3.0`.
-  [#1097](https://github.com/vmware/packer-examples-for-vsphere/pull/1097)
-- Updates Ansible `chocolatey.chocolatey` collection to `1.5.3`.
-  [#1097](https://github.com/vmware/packer-examples-for-vsphere/pull/1097)
+  [#1097](https://github.com/vmware/packer-examples-for-vsphere/pull/1097),
+  [#1160](https://github.com/vmware/packer-examples-for-vsphere/pull/1160)
+- Updates Ansible `ansible.posix` collection to `2.2.2`.
+  [#1097](https://github.com/vmware/packer-examples-for-vsphere/pull/1097),
+  [#1160](https://github.com/vmware/packer-examples-for-vsphere/pull/1160)
+- Updates Ansible `ansible.windows` collection to `3.9.2`.
+  [#1097](https://github.com/vmware/packer-examples-for-vsphere/pull/1097),
+  [#1160](https://github.com/vmware/packer-examples-for-vsphere/pull/1160)
+- Updates Ansible `chocolatey.chocolatey` collection to `1.6.0`.
+  [#1097](https://github.com/vmware/packer-examples-for-vsphere/pull/1097),
+  [#1160](https://github.com/vmware/packer-examples-for-vsphere/pull/1160)
 - Updates `chocolatey` to `2.6.0`.
   [#1109](https://github.com/vmware/packer-examples-for-vsphere/pull/1109)
 - Updates `required_versions` for `packer` to `>= 1.16.0`.
