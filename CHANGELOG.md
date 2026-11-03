@@ -88,6 +88,8 @@
 - Updates `required_versions` for `vmware/vsphere` to `>= 2.17.1`.
   [#1102](https://github.com/vmware/packer-examples-for-vsphere/pull/1102),
   [#1153](https://github.com/vmware/packer-examples-for-vsphere/pull/1153)
+- Updates `required_versions` for `hashicorp/hcp` to `~> 0.115.0`.
+  [#1155](https://github.com/vmware/packer-examples-for-vsphere/pull/1155)
 - Updates Ubuntu 24.04 LTS to 24.04.5 release.
   [#1131](https://github.com/vmware/packer-examples-for-vsphere/pull/1131),
   [#1099](https://github.com/vmware/packer-examples-for-vsphere/pull/1099),
