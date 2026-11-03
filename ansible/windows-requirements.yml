@@ -1,8 +1,8 @@
 ---
 collections:
   - name: ansible.windows
-    version: 3.3.0
+    version: 3.9.2
   - name: chocolatey.chocolatey
-    version: 1.5.3
+    version: 1.6.0
   - name: community.general
-    version: 12.4.0
+    version: 14.0.0
