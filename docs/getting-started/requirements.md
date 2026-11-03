@@ -11,7 +11,8 @@ The project is tested on the following platforms:
 ::spantable::
 | Platform        | Version                |
 | --------------- | ---------------------- |
-| VMware vSphere  | 9.0 or later           |
+| VMware vSphere  | 9.1                    |
+| VMware vSphere  | 9.0                    |
 | VMware vSphere  | 8.0 Update 3h or later |
 ::end-spantable::
 
@@ -23,7 +24,7 @@ The project is tested on the following operating systems for the Packer host [^1
 | Operating System   | Version | Architecture  |
 | :----------------- | :------ | :------------ |
 | VMware Photon OS   | 5.0     | `amd64`       |
-| Ubuntu Server      | 24.04   | `amd64`       |
+| Ubuntu Server      | 26.04   | `amd64`       |
 | macOS              | Tahoe   | `arm64`       |
 ::end-spantable::
 
