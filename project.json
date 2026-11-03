@@ -199,7 +199,7 @@
                                         "common": "common.pkrvars.hcl",
                                         "network": "network.pkrvars.hcl",
                                         "storage": "linux-storage.pkrvars.hcl",
-                                        "rshm": "rhsm.pkrvars.hcl"
+                                        "rhsm": "rhsm.pkrvars.hcl"
                                     }
                                 ]
                             }
@@ -224,7 +224,7 @@
                                         "common": "common.pkrvars.hcl",
                                         "network": "network.pkrvars.hcl",
                                         "storage": "linux-storage.pkrvars.hcl",
-                                        "rshm": "rhsm.pkrvars.hcl"
+                                        "rhsm": "rhsm.pkrvars.hcl"
                                     }
                                 ]
                             }
@@ -249,7 +249,7 @@
                                         "common": "common.pkrvars.hcl",
                                         "network": "network.pkrvars.hcl",
                                         "storage": "linux-storage.pkrvars.hcl",
-                                        "rshm": "rhsm.pkrvars.hcl"
+                                        "rhsm": "rhsm.pkrvars.hcl"
                                     }
                                 ]
                             }
