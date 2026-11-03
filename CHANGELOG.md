@@ -72,8 +72,7 @@
   [#1081](https://github.com/vmware/packer-examples-for-vsphere/pull/1081)
 - Updates Oracle Linux 9 to 9.7 release.
   [#1081](https://github.com/vmware/packer-examples-for-vsphere/pull/1081)
-- Updates Fedora Server to release 43.
-  [#1080](https://github.com/vmware/packer-examples-for-vsphere/pull/1080)
+- Updates Fedora Server to release 45.
 - Update to the documentation to clarify privilege naming. The change updates
   the privilege description for creating snapshots to use `Snapshot Management`
   instead of `State`, making the documentation more accurate for vSphere 8+.

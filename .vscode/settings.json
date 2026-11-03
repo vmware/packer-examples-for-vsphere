@@ -22,7 +22,7 @@
   "powershell.scriptAnalysis.enable": true,
 
   // Extension settings
-  "extensions.ignoreRecommendations": false,
+  "extensions.ignoreRecommendations": true,
 
   // Reflow Markdown settings
   "reflowMarkdown.preferredLineLength": 100,
