@@ -18,7 +18,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Run GitHub Super-Linter
-        uses: github/super-linter@b807e99ddd37e444d189cfd2c2ca1274d8ae8ef1 # v7
+        uses: super-linter/super-linter@2da136927bd4a73596db63044b504547c62cb854 # v9.0.0
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           DEFAULT_BRANCH: develop
