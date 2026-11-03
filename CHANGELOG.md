@@ -6,18 +6,40 @@
 
 **Bug Fix**:
 
-- Corrects Rocky Linux 10 and 9 ISO filenames to the published images.
-  [#1148](https://github.com/vmware/packer-examples-for-vsphere/pull/1148)
+- Prevents a duplicate `disable_vmware_customization` key in `cloud.cfg`.
+  [#1123](https://github.com/vmware/packer-examples-for-vsphere/pull/1123)
+- Replaces deprecated `gateway4` with `routes` in the Ubuntu cloud-init network
+  configuration.
+  [#1111](https://github.com/vmware/packer-examples-for-vsphere/pull/1111)
+- Adds the `-L` option to `curl` commands so downloads follow redirects.
+  [#1070](https://github.com/vmware/packer-examples-for-vsphere/pull/1070)
 - Increases the Windows Recovery Environment (Windows RE) partition size for
   Windows Server 2025 builds to accommodate version storage requirements.
   [#1044](https://github.com/vmware/packer-examples-for-vsphere/pull/1044)
 
 **Enhancement**:
+
 - Adds Ubuntu Server 26.04 LTS to the project.
   [#1139](https://github.com/vmware/packer-examples-for-vsphere/pull/1139)
 - Adds Debian 13 to the project.
   [#1056](https://github.com/vmware/packer-examples-for-vsphere/pull/1056),
+  [#1074](https://github.com/vmware/packer-examples-for-vsphere/pull/1074),
   [#1094](https://github.com/vmware/packer-examples-for-vsphere/pull/1094),
+  [#1145](https://github.com/vmware/packer-examples-for-vsphere/pull/1145)
+- Adds Red Hat Enterprise Linux 10 to the project. Updates Red Hat subscription
+  to use an activation key and organization.
+  [#1114](https://github.com/vmware/packer-examples-for-vsphere/pull/1114),
+  [#1127](https://github.com/vmware/packer-examples-for-vsphere/pull/1127)
+- Adds AlmaLinux OS 10 to the project.
+  [#1114](https://github.com/vmware/packer-examples-for-vsphere/pull/1114),
+  [#1127](https://github.com/vmware/packer-examples-for-vsphere/pull/1127)
+- Adds Oracle Linux 10 to the project.
+  [#1114](https://github.com/vmware/packer-examples-for-vsphere/pull/1114),
+  [#1127](https://github.com/vmware/packer-examples-for-vsphere/pull/1127)
+- Adds Rocky Linux 10 to the project.
+  [#1114](https://github.com/vmware/packer-examples-for-vsphere/pull/1114),
+  [#1127](https://github.com/vmware/packer-examples-for-vsphere/pull/1127),
+  [#1148](https://github.com/vmware/packer-examples-for-vsphere/pull/1148)
 - Adds `common_ovf_export_image_files` variable to control whether image files
   are included in OVF exports.
   [#1047](https://github.com/vmware/packer-examples-for-vsphere/pull/1047)
@@ -26,35 +48,107 @@
 
 **Chore**:
 
-- Updates the tested platform versions to include VMware vSphere 9.0 and 8.0
-  Update 3h.
-  [#1083](https://github.com/vmware/packer-examples-for-vsphere/pull/1083)
+- Updates the tested platform versions to include VMware vSphere 9.1, 9.0, and
+  8.0 Update 3h or later.
+  [#1083](https://github.com/vmware/packer-examples-for-vsphere/pull/1083),
+  [#1150](https://github.com/vmware/packer-examples-for-vsphere/pull/1150)
 - Updates the tested operating system requirements to VMware Photon OS 5.0
-  (`amd64`), Ubuntu Server 24.04 (`amd64`), and macOS Tahoe (`arm64`).
-  [#1083](https://github.com/vmware/packer-examples-for-vsphere/pull/1083)
-- Updates the Packer plugin for VMware vSphere source from
-  `github.com/hashicorp/vsphere` to `github.com/vmware/vsphere`. This aligns
-  with the plugin's updated namespace.
-  [#1100](https://github.com/vmware/packer-examples-for-vsphere/pull/1100)
-- Updates the Terraform provider for VMware vSphere source from
-  `hashicorp/vsphere` to `vmware/vsphere`. This aligns with the provider's
-  updated namespace.
-  [#1101](https://github.com/vmware/packer-examples-for-vsphere/pull/1104)
+  (`amd64`), Ubuntu Server 26.04 (`amd64`), and macOS Tahoe (`arm64`).
+  [#1083](https://github.com/vmware/packer-examples-for-vsphere/pull/1083),
+  [#1150](https://github.com/vmware/packer-examples-for-vsphere/pull/1150)
+- Updates the Packer plugin and Terraform provider for VMware vSphere from the
+  `hashicorp/vsphere` namespace to `vmware/vsphere`.
+  [#1100](https://github.com/vmware/packer-examples-for-vsphere/pull/1100),
+  [#1101](https://github.com/vmware/packer-examples-for-vsphere/pull/1101)
 - Updates Ansible `community.general` collection to `12.4.0`.
-  [#1108](https://github.com/vmware/packer-examples-for-vsphere/pull/1108)
+  [#1108](https://github.com/vmware/packer-examples-for-vsphere/pull/1108),
+  [#1097](https://github.com/vmware/packer-examples-for-vsphere/pull/1097)
+- Updates Ansible `ansible.posix` collection to `2.1.0`.
+  [#1097](https://github.com/vmware/packer-examples-for-vsphere/pull/1097)
+- Updates Ansible `ansible.windows` collection to `3.3.0`.
+  [#1097](https://github.com/vmware/packer-examples-for-vsphere/pull/1097)
+- Updates Ansible `chocolatey.chocolatey` collection to `1.5.3`.
+  [#1097](https://github.com/vmware/packer-examples-for-vsphere/pull/1097)
 - Updates `chocolatey` to `2.6.0`.
   [#1109](https://github.com/vmware/packer-examples-for-vsphere/pull/1109)
-- Updates `required_versions` for `packer` to `>= 1.15.0`.
-  [#1106](https://github.com/vmware/packer-examples-for-vsphere/pull/1107)
-- Updates `required_plugins` for `packer-plugin-vsphere` to `>= 2.1.1`.
-  [#1106](https://github.com/vmware/packer-examples-for-vsphere/pull/1106)
-- Updates `required_versions` for `packer-plugin-ansible` to >= `1.1.4`.
-  [#1078](https://github.com/vmware/packer-examples-for-vsphere/pull/1078)
+- Updates `required_versions` for `packer` to `>= 1.16.0`.
+  [#1107](https://github.com/vmware/packer-examples-for-vsphere/pull/1107),
+  [#1135](https://github.com/vmware/packer-examples-for-vsphere/pull/1135)
+- Updates `required_plugins` for `packer-plugin-vsphere` to `>= 2.5.0`.
+  [#1077](https://github.com/vmware/packer-examples-for-vsphere/pull/1077),
+  [#1106](https://github.com/vmware/packer-examples-for-vsphere/pull/1106),
+  [#1136](https://github.com/vmware/packer-examples-for-vsphere/pull/1136)
+- Updates `required_versions` for `packer-plugin-ansible` to >= `1.1.6`.
+  [#1078](https://github.com/vmware/packer-examples-for-vsphere/pull/1078),
+  [#1137](https://github.com/vmware/packer-examples-for-vsphere/pull/1137)
 - Updates `required_plugins` for `ethanmdavidson/packer-plugin-git` to
-  `>= 0.6.5`.
-  [#1079](https://github.com/vmware/packer-examples-for-vsphere/pull/1079)
-- Updates `required_versions` for `hashicorp/vsphere` to `>= 2.15.0`.
+  `>= 0.6.7`.
+  [#1079](https://github.com/vmware/packer-examples-for-vsphere/pull/1079),
+  [#1138](https://github.com/vmware/packer-examples-for-vsphere/pull/1138)
+- Updates `required_versions` for `vmware/vsphere` to `>= 2.15.0`.
   [#1102](https://github.com/vmware/packer-examples-for-vsphere/pull/1102)
+- Updates Ubuntu 24.04 LTS to 24.04.5 release.
+  [#1131](https://github.com/vmware/packer-examples-for-vsphere/pull/1131),
+  [#1099](https://github.com/vmware/packer-examples-for-vsphere/pull/1099),
+  [#1037](https://github.com/vmware/packer-examples-for-vsphere/pull/1037)
+- Updates Ubuntu Server 22.04 LTS to 22.04.5 release.
+  [#1037](https://github.com/vmware/packer-examples-for-vsphere/pull/1037)
+- Updates Debian 12 to 12.15 release.
+  [#1146](https://github.com/vmware/packer-examples-for-vsphere/pull/1146),
+  [#1095](https://github.com/vmware/packer-examples-for-vsphere/pull/1095),
+  [#1073](https://github.com/vmware/packer-examples-for-vsphere/pull/1073),
+  [#1049](https://github.com/vmware/packer-examples-for-vsphere/pull/1049),
+  [#1031](https://github.com/vmware/packer-examples-for-vsphere/pull/1031)
+- Updates SLES 15 to 15.7 release.
+  [#1149](https://github.com/vmware/packer-examples-for-vsphere/pull/1149),
+  [#1050](https://github.com/vmware/packer-examples-for-vsphere/pull/1050),
+  [#1030](https://github.com/vmware/packer-examples-for-vsphere/pull/1030)
+- Updates Red Hat Enterprise Linux 9 to 9.8 release.
+  [#1127](https://github.com/vmware/packer-examples-for-vsphere/pull/1127),
+  [#1081](https://github.com/vmware/packer-examples-for-vsphere/pull/1081),
+  [#1051](https://github.com/vmware/packer-examples-for-vsphere/pull/1051)
+- Updates AlmaLinux 9 to 9.8 release.
+  [#1127](https://github.com/vmware/packer-examples-for-vsphere/pull/1127),
+  [#1081](https://github.com/vmware/packer-examples-for-vsphere/pull/1081),
+  [#1051](https://github.com/vmware/packer-examples-for-vsphere/pull/1051)
+- Updates Rocky Linux 9 to 9.8 release.
+  [#1127](https://github.com/vmware/packer-examples-for-vsphere/pull/1127),
+  [#1081](https://github.com/vmware/packer-examples-for-vsphere/pull/1081),
+  [#1051](https://github.com/vmware/packer-examples-for-vsphere/pull/1051),
+  [#1148](https://github.com/vmware/packer-examples-for-vsphere/pull/1148)
+- Updates Oracle Linux 9 to 9.8 release.
+  [#1127](https://github.com/vmware/packer-examples-for-vsphere/pull/1127),
+  [#1081](https://github.com/vmware/packer-examples-for-vsphere/pull/1081),
+  [#1051](https://github.com/vmware/packer-examples-for-vsphere/pull/1051)
+- Updates Fedora Server to release 45.
+  [#1144](https://github.com/vmware/packer-examples-for-vsphere/pull/1144),
+  [#1080](https://github.com/vmware/packer-examples-for-vsphere/pull/1080),
+  [#1048](https://github.com/vmware/packer-examples-for-vsphere/pull/1048)
+- Updates the Debian guest operating system type for the vSphere 8.0 Update 3h
+  minimum and enables the apt mirror during installation.
+  [#1084](https://github.com/vmware/packer-examples-for-vsphere/pull/1084)
+- Updates Windows ISO example variables to generic evaluation image names.
+  [#1085](https://github.com/vmware/packer-examples-for-vsphere/pull/1085)
+- Update to the documentation to clarify privilege naming. The change updates
+  the privilege description for creating snapshots to use `Snapshot Management`
+  instead of `State`, making the documentation more accurate for vSphere 8+.
+  [#1090](https://github.com/vmware/packer-examples-for-vsphere/pull/1090)
+- Updates the documentation system from MkDocs Material to Zensical.
+  [#1124](https://github.com/vmware/packer-examples-for-vsphere/pull/1124)
+- Updates the project support statement.
+  [#1053](https://github.com/vmware/packer-examples-for-vsphere/pull/1053)
+- Updates `LICENSE.md`.
+  [#1052](https://github.com/vmware/packer-examples-for-vsphere/pull/1052)
+- Replaces the Oracle Linux documentation icon with the generic Linux icon.
+  [#1134](https://github.com/vmware/packer-examples-for-vsphere/pull/1134)
+- Transfers the project from the `vmware-samples` organization to `vmware`.
+  [#1038](https://github.com/vmware/packer-examples-for-vsphere/pull/1038)
+- Uses `ansible_facts` lookups in place of deprecated Ansible fact variables.
+  [#1098](https://github.com/vmware/packer-examples-for-vsphere/pull/1098)
+- Eliminates the outer `when: enable_cloudinit == 'true''` condition from
+  the configuration task, as the inner conditions are sufficient for task
+  execution.
+  [#1092](https://github.com/vmware/packer-examples-for-vsphere/pull/1092)
 - Removes Debian 11 from the project.
   On 31 August 2026, Debian 11 reached the end of long-term support.
   [#1147](https://github.com/vmware/packer-examples-for-vsphere/pull/1147)
@@ -64,39 +158,13 @@
 - Removes Windows 10 from the project..
   On 14 October 2025, Windows 10 reached the end of life.
   [#1082](https://github.com/vmware/packer-examples-for-vsphere/pull/1082)
-- Updates Ubuntu 24.04 LTS to 24.04.3 release.
-  [#1099](https://github.com/vmware/packer-examples-for-vsphere/pull/1099)
-- Updates Debian 13 to 13.7 release.
-  [#1145](https://github.com/vmware/packer-examples-for-vsphere/pull/1145)
-- Updates Debian 12 to 12.15 release.
-  [#1146](https://github.com/vmware/packer-examples-for-vsphere/pull/1146)
-- Updates Debian 12 to 12.12 release.
-  [#1095](https://github.com/vmware/packer-examples-for-vsphere/pull/1095)
-- Updates SLES 15 to 15.7 release.
-  [#1050](https://github.com/vmware/packer-examples-for-vsphere/pull/1050), [#1149](https://github.com/vmware/packer-examples-for-vsphere/pull/1149)
-- Updates Red Hat Enterprise Linux 9 to 9.7 release.
-  [#1081](https://github.com/vmware/packer-examples-for-vsphere/pull/1081)
-- Updates AlmaLinux 9 to 9.7 release.
-  [#1081](https://github.com/vmware/packer-examples-for-vsphere/pull/1081)
-- Updates Rocky Linux 9 to 9.7 release.
-  [#1081](https://github.com/vmware/packer-examples-for-vsphere/pull/1081)
-- Updates Oracle Linux 9 to 9.7 release.
-  [#1081](https://github.com/vmware/packer-examples-for-vsphere/pull/1081)
-- Updates Fedora Server to release 45.
-  [#1144](https://github.com/vmware/packer-examples-for-vsphere/pull/1144)
-- Update to the documentation to clarify privilege naming. The change updates
-  the privilege description for creating snapshots to use `Snapshot Management`
-  instead of `State`, making the documentation more accurate for vSphere 8+.
-  [#1090](https://github.com/vmware/packer-examples-for-vsphere/pull/1090)
 - Removes the use of `awk` commands that printed the installed versions of
   supporting components.
   [#1089](https://github.com/vmware/packer-examples-for-vsphere/pull/1089)
+- Removes the Trunk extension and related file watcher settings.
+  [#1076](https://github.com/vmware/packer-examples-for-vsphere/pull/1076)
 - Removes additional packages from the `chocolatey` package lists.
   [#1109](https://github.com/vmware/packer-examples-for-vsphere/pull/1109)
-- Eliminates the outer `when: enable_cloudinit == 'true''` condition from
-  the configuration task, as the inner conditions are sufficient for task
-  execution.
-  [#1092](https://github.com/vmware/packer-examples-for-vsphere/pull/1092)
 
 ## v0.22.1
 
