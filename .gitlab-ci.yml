@@ -76,15 +76,6 @@ Debian-12:
 
 ##############################################################################
 
-Debian-11:
-    extends: .packer-build
-    variables:
-        INPUT_PATH: "$SCRIPT_PATH/builds/linux/debian/11/"
-        BUILD_VARS: "linux-debian-11.pkrvars.hcl"
-        EXTRA_VAR_FILES: "-var-file=$CONFIG_PATH/network.pkrvars.hcl -var-file=$CONFIG_PATH/linux-storage.pkrvars.hcl"
-
-##############################################################################
-
 Ubuntu-Server-26.04-LTS:
     extends: .packer-build
     variables:

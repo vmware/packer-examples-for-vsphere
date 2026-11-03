@@ -31,12 +31,6 @@ menu:
           var_files:
             - "network.pkrvars.hcl"
             - "linux-storage.pkrvars.hcl"
-      - entry: "Debian 11"
-        build:
-          path: "builds/linux/debian/11/"
-          var_files:
-            - "network.pkrvars.hcl"
-            - "linux-storage.pkrvars.hcl"
       - entry: "Ubuntu Server 26.04 LTS"
         build:
           path: "builds/linux/ubuntu/26-04-lts/"
