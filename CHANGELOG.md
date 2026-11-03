@@ -52,12 +52,12 @@
   8.0 Update 3h or later.
   [#1083](https://github.com/vmware/packer-examples-for-vsphere/pull/1083),
   [#1150](https://github.com/vmware/packer-examples-for-vsphere/pull/1150)
-- Updates the tested operating system requirements to VMware Photon OS 5.0
-  (`amd64`), Ubuntu Server 26.04 (`amd64`), and macOS 27 (Golden Gate) and
-  26 (Tahoe) (`arm64`).
+- Updates the tested operating system requirements to Ubuntu Server 26.04
+  (`amd64`) and macOS 27 (Golden Gate) and 26 (Tahoe) (`arm64`).
   [#1083](https://github.com/vmware/packer-examples-for-vsphere/pull/1083),
   [#1150](https://github.com/vmware/packer-examples-for-vsphere/pull/1150),
-  [#1159](https://github.com/vmware/packer-examples-for-vsphere/pull/1159)
+  [#1159](https://github.com/vmware/packer-examples-for-vsphere/pull/1159),
+  [#1161](https://github.com/vmware/packer-examples-for-vsphere/pull/1161)
 - Updates the Packer plugin and Terraform provider for VMware vSphere from the
   `hashicorp/vsphere` namespace to `vmware/vsphere`.
   [#1100](https://github.com/vmware/packer-examples-for-vsphere/pull/1100),
@@ -177,6 +177,8 @@
   [#1076](https://github.com/vmware/packer-examples-for-vsphere/pull/1076)
 - Removes additional packages from the `chocolatey` package lists.
   [#1109](https://github.com/vmware/packer-examples-for-vsphere/pull/1109)
+- Removes VMware Photon OS from the tested operating systems.
+  [#1161](https://github.com/vmware/packer-examples-for-vsphere/pull/1161)
 
 ## v0.22.1
 

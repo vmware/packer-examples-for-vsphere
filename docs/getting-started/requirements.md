@@ -23,7 +23,6 @@ The project is tested on the following operating systems for the Packer host [^1
 ::spantable::
 | Operating System   | Version          | Architecture  |
 | :----------------- | :--------------- | :------------ |
-| VMware Photon OS   | 5.0              | `amd64`       |
 | Ubuntu Server      | 26.04            | `amd64`       |
 | macOS              | 27 (Golden Gate) | `arm64`       |
 | macOS              | 26 (Tahoe)       | `arm64`       |
@@ -39,19 +38,6 @@ The project is tested on the following operating systems for the Packer host [^1
 | :fontawesome-brands-git: &nbsp;&nbsp; Packer Plugin for Git      | >= 0.6.7  | Community Plugin | [:fontawesome-brands-github:][packer-plugin-git-repo] &nbsp;&nbsp; [:material-library:][packer-plugin-git-docs]         |
 
 ### Installation
-
-=== ":fontawesome-brands-linux: &nbsp; VMware Photon OS"
-
-    You can install Packer on VMware Photon OS using the following commands:
-
-    ```shell
-    export PACKER_VERSION="1.16.0"
-    export OS_PACKAGES="wget unzip"
-
-    tdnf install ${OS_PACKAGES} -y
-    wget -q https://releases.hashicorp.com/packer/${PACKER_VERSION}/packer_${PACKER_VERSION}_linux_amd64.zip
-    unzip -o -d /usr/local/bin/ packer_${PACKER_VERSION}_linux_amd64.zip
-    ```
 
 === ":fontawesome-brands-ubuntu: &nbsp; Ubuntu"
 
@@ -113,32 +99,6 @@ The following additional software packages must be installed on the operating sy
 | :fontawesome-solid-compact-disc: &nbsp;&nbsp; xorriso  | >= 1.5.6  | ISO filesystem images creator for Linux            | [:material-library:][xorriso]   |
 
 ### Installation
-
-=== ":fontawesome-brands-linux: &nbsp; VMware Photon OS"
-
-    Packages:
-
-    ```shell
-    tdnf -y install ansible git jq xorriso wget unzip
-    export PATH="$HOME/.local/bin:$PATH"
-    ```
-
-    Terraform:
-
-    ```shell
-    export TERRAFORM_VERSION="1.10.0"
-    wget -q https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
-    unzip -o -d /usr/local/bin/ terraform_${TERRAFORM_VERSION}_linux_${LINUX_ARCH}.zip
-    ```
-
-    Gomplate
-
-    ```shell
-    export GOMPLATE_VERSION="5.3.1"
-    wget -q https://github.com/hairyhenderson/gomplate/releases/download/v${GOMPLATE_VERSION}/gomplate_linux-amd64
-    chmod +x gomplate_linux-amd64
-    sudo mv gomplate_linux-amd64 /usr/local/bin/gomplate
-    ```
 
 === ":fontawesome-brands-ubuntu: &nbsp; Ubuntu"
 
