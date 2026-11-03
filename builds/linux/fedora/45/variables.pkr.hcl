@@ -4,7 +4,7 @@
 
 /*
     DESCRIPTION:
-    Fedora Server 43 input variables.
+    Fedora Server 45 input variables.
     Packer Plugin for VMware vSphere: 'vsphere-iso' builder.
 */
 
