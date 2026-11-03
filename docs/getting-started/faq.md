@@ -20,8 +20,8 @@ icon: octicons/comment-discussion-24
     vm_inst_os_eval      = true
     vm_inst_os_language  = "en-US"
     vm_inst_os_keyboard  = "en-US"
-    vm_inst_os_image_pro = "Windows 10 Pro"
+    vm_inst_os_image_pro = "Windows 11 Pro"
     vm_inst_os_key_pro   = <YourProductKey>
-    vm_inst_os_image_ent = "Windows 10 Enterprise"
+    vm_inst_os_image_ent = "Windows 11 Enterprise"
     vm_inst_os_key_ent   = "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"
     ```
