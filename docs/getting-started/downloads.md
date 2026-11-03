@@ -84,9 +84,9 @@ Download the guest operating system ISOs using the download script (`./download.
       ```shell
       Select a version:
 
-      1: Ubuntu Server 24.04 LTS
-      2: Ubuntu Server 22.04 LTS
-      3: Ubuntu Server 20.04 LTS
+      1: Ubuntu Server 26.04
+      2: Ubuntu Server 24.04
+      3: Ubuntu Server 22.04
 
       Enter b to go back, or q to quit.
 
@@ -96,7 +96,7 @@ Download the guest operating system ISOs using the download script (`./download.
 5. The download will start.
 
       ```shell
-      Downloading: ubuntu-24.04-live-server-amd64.iso => iso/linux/ubuntu-server/24.04-lts/amd64.
+      Downloading: ubuntu-26.04.1-live-server-amd64.iso => iso/linux/ubuntu-server/26.04/amd64.
 
         % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                        Dload  Upload   Total   Spent    Left  Speed
@@ -105,10 +105,10 @@ Download the guest operating system ISOs using the download script (`./download.
                                        Dload  Upload   Total   Spent    Left  Speed
       100   299  100   299    0     0    535      0 --:--:-- --:--:-- --:--:--   535
 
-      Verifying: sha256 checksum for ubuntu-24.04-live-server-amd64.iso.
-      Verification of checksum successful for ubuntu-24.04-live-server-amd64.iso.
-              - Expected: 8762f7e74e4d64d72fceb5f70682e6b069932deedb4949c6975d0f0fe0a91be3
-              - Actual:   8762f7e74e4d64d72fceb5f70682e6b069932deedb4949c6975d0f0fe0a91be3
+      Verifying: sha256 checksum for ubuntu-26.04.1-live-server-amd64.iso.
+      Verification of checksum successful for ubuntu-26.04.1-live-server-amd64.iso.
+              - Expected: cc8a95cde20f6ced61a322420de00f10cc3c90ced545daa46cb9c1a117f1d927
+              - Actual:   cc8a95cde20f6ced61a322420de00f10cc3c90ced545daa46cb9c1a117f1d927
 
       Would you like to (c)ontinue or (q)uit?
       ```
