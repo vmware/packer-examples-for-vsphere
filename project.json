@@ -272,7 +272,7 @@
                                 "architectures": [
                                     {
                                         "architecture": "amd64",
-                                        "download_link": "https://download.rockylinux.org/pub/rocky/10.2/isos/x86_64/Rocky-10.1-x86_64-dvd1.iso",
+                                        "download_link": "https://download.rockylinux.org/pub/rocky/10.2/isos/x86_64/Rocky-10.2-x86_64-dvd1.iso",
                                         "checksum_algorithm": "sha256",
                                         "checksum": "https://download.rockylinux.org/pub/rocky/10.2/isos/x86_64/CHECKSUM"
                                     }
@@ -297,7 +297,7 @@
                                 "architectures": [
                                     {
                                         "architecture": "amd64",
-                                        "download_link": "https://download.rockylinux.org/pub/rocky/9.8/isos/x86_64/Rocky-9.7-x86_64-dvd.iso",
+                                        "download_link": "https://download.rockylinux.org/pub/rocky/9.8/isos/x86_64/Rocky-9.8-x86_64-dvd.iso",
                                         "checksum_algorithm": "sha256",
                                         "checksum": "https://download.rockylinux.org/pub/rocky/9.8/isos/x86_64/CHECKSUM"
                                     }

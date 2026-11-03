@@ -6,6 +6,7 @@
 
 **Bug Fix**:
 
+- Corrects Rocky Linux 10 and 9 ISO filenames to the published images.
 - Increases the Windows Recovery Environment (Windows RE) partition size for
   Windows Server 2025 builds to accommodate version storage requirements.
   [#1044](https://github.com/vmware/packer-examples-for-vsphere/pull/1044)

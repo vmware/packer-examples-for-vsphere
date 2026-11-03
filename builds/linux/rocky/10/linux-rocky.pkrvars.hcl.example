@@ -20,5 +20,5 @@ vm_firmware = "efi"
 
 // Removable Media Settings
 iso_datastore_path       = "iso/linux/rocky-linux/10/amd64"
-iso_content_library_item = "Rocky-10.2-x86_64-dvd"
-iso_file                  = "Rocky-10.2-x86_64-dvd.iso"
+iso_content_library_item = "Rocky-10.2-x86_64-dvd1"
+iso_file                  = "Rocky-10.2-x86_64-dvd1.iso"
