@@ -238,6 +238,15 @@ Fedora-Server-45:
 
 ##############################################################################
 
+SUSE-Linux-Enterprise-Server-16:
+    extends: .packer-build
+    variables:
+        INPUT_PATH: "$SCRIPT_PATH/builds/linux/sles/16/"
+        BUILD_VARS: "linux-sles-16.pkrvars.hcl"
+        EXTRA_VAR_FILES: "-var-file=$CONFIG_PATH/scc.pkrvars.hcl"
+
+##############################################################################
+
 SUSE-Linux-Enterprise-Server-15:
     extends: .packer-build
     variables:
