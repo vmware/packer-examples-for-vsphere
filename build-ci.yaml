@@ -146,6 +146,7 @@ menu:
         build:
           path: "builds/linux/sles/15/"
           var_files:
+            - "network.pkrvars.hcl"
             - "scc.pkrvars.hcl"
 
   - entry: "Microsoft Windows"

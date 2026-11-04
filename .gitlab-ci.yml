@@ -243,7 +243,7 @@ SUSE-Linux-Enterprise-Server-15:
     variables:
         INPUT_PATH: "$SCRIPT_PATH/builds/linux/sles/15/"
         BUILD_VARS: "linux-sles-15.pkrvars.hcl"
-        EXTRA_VAR_FILES: "-var-file=$CONFIG_PATH/scc.pkrvars.hcl"
+        EXTRA_VAR_FILES: "-var-file=$CONFIG_PATH/network.pkrvars.hcl -var-file=$CONFIG_PATH/scc.pkrvars.hcl"
 
 ##############################################################################
 

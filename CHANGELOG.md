@@ -54,6 +54,8 @@
 
 **Chore**:
 
+- Passes `network.pkrvars.hcl` on the SUSE Linux Enterprise Server GitLab CI job.
+  [#1180](https://github.com/vmware/packer-examples-for-vsphere/pull/1180)
 - Renames the Red Hat Subscription Manager catalog key from `rshm` to `rhsm`.
   [#1179](https://github.com/vmware/packer-examples-for-vsphere/pull/1179)
 - Updates the Windows Server editions in the documentation to Standard and Datacenter.
