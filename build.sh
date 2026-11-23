@@ -798,7 +798,7 @@ select_build() {
             printf "\n\e[34m%s\e[0m\n" "$command"
         fi
 
-        eval "$command"
+        eval "$command" || build_status=$?
         ;;
     "Red Hat Enterprise Linux")
         var_files=("vsphere_vars" "build_vars" "ansible_vars" "proxy_vars" "common_vars" "network_vars" "storage_vars" "rhsm_vars" "BUILD_VARS")
@@ -818,7 +818,7 @@ select_build() {
             printf "\n\e[34m%s\e[0m\n" "$command"
         fi
 
-        eval "$command"
+        eval "$command" || build_status=$?
         ;;
     "VMware Photon OS")
         var_files=("vsphere_vars" "build_vars" "ansible_vars" "proxy_vars" "common_vars" "network_vars" "BUILD_VARS")
@@ -838,7 +838,7 @@ select_build() {
             printf "\n\e[34m%s\e[0m\n" "$command"
         fi
 
-        eval "$command"
+        eval "$command" || build_status=$?
         ;;
     "SUSE Linux Enterprise Server")
         var_files=("vsphere_vars" "build_vars" "ansible_vars" "network_vars" "proxy_vars" "common_vars" "scc_vars" "BUILD_VARS")
@@ -858,7 +858,7 @@ select_build() {
             printf "\n\e[34m%s\e[0m\n" "$command"
         fi
 
-        eval "$command"
+        eval "$command" || build_status=$?
         ;;
     "Windows Server")
         case "$edition" in
@@ -882,7 +882,7 @@ select_build() {
                 printf "\n\e[34m%s\e[0m\n" "$command"
             fi
 
-            eval "$command"
+            eval "$command" || build_status=$?
             ;;
         "Datacenter")
             var_files=("vsphere_vars" "build_vars" "ansible_vars" "proxy_vars" "common_vars" "BUILD_VARS")
@@ -903,7 +903,7 @@ select_build() {
                 printf "\n\e[34m%s\e[0m\n" "$command"
             fi
 
-            eval "$command"
+            eval "$command" || build_status=$?
             ;;
         *)
             print_message error "Unsupported $dist edition: $edition"
@@ -931,7 +931,7 @@ select_build() {
                 printf "\n\e[34m%s\e[0m\n" "$command"
             fi
 
-            eval "$command"
+            eval "$command" || build_status=$?
             ;;
         "Professional")
             var_files=("vsphere_vars" "build_vars" "ansible_vars" "proxy_vars" "common_vars" "BUILD_VARS")
@@ -952,7 +952,7 @@ select_build() {
                 printf "\n\e[34m%s\e[0m\n" "$command"
             fi
 
-            eval "$command"
+            eval "$command" || build_status=$?
             ;;
         *)
             print_message error "Unsupported edition: $dist $edition"
@@ -982,13 +982,21 @@ if $logging_enabled; then
 fi
 
 # Start the script with the selecting the guest operating system.
+build_status=0
 select_os
+
+# With --auto-continue, run a single noninteractive build and return Packer's
+# exit status, so CI pipelines fail when the build fails.
+if [ "$auto_continue" = true ]; then
+    exit "$build_status"
+fi
 
 # Prompt the user to continue or quit.
 while true; do
     action=""
     printf "Would you like to \033[0;32mc\033[0m)ontinue, or \033[0;31mq\033[0m)uit? %s" "$action"
-    read -r action
+    # Exit if stdin is closed rather than looping on the prompt.
+    read -r action || exit "$build_status"
     log_message "info" "User selected: $action"
     case $action in
     [cC]*)
