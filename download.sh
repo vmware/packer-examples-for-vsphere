@@ -207,7 +207,7 @@ print_message() {
 
     if [[ "$logging_enabled" == "true" ]]; then
         # Remove color formatting from the log message
-        local no_color_message=$(echo -e $message | sed -r "s/\x1b\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g")]
+        local no_color_message=$(echo -e $message | sed -r "s/\x1b\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g")
         log_message "$type" "$no_color_message"
     fi
 }
@@ -602,7 +602,6 @@ select_download() {
 
     # Check if the selected guest operating system is Linux.
     elif [[ "$os" == *"Linux"* ]]; then
-        dist_name=$(jq -r --arg os "$os" --arg desc "$description" '.os[] | select(.name == $os) | .distributions[] | select(.description == $desc) | .name' $json_path)
         download_link=$(jq -r --arg os "$os" --arg dist "$dist" --arg version "$version" --arg arch "$arch" '.os[] | select(.name == $os) | .distributions[] | select(.description == $dist) | .versions | to_entries[] | .value[] | select(.version == $version) | .architectures[] | select(.architecture == $arch) | .download_link' $json_path)
         # Validate the download link
         if curl -L --output /dev/null --silent --head --fail "$download_link"; then
@@ -681,6 +680,8 @@ select_download() {
         ;;
     "Windows")
         printf "\n"
+        # No checksum is published for Windows evaluation media.
+        downloaded=true
         ;;
     *)
         print_message error "Unsupported guest operating system: \033[34m$os\033[0m"
@@ -850,6 +851,7 @@ compare_checksums() {
             print_message info "Verification of checksum \033[32msuccessful\033[0m for \033[34m$file_name\033[0m.\n"
             print_message info "        - \033[32mExpected:\033[0m \033[34m$expected_checksum\033[0m\n"
             print_message info "        - \033[32mActual:\033[0m   \033[34m$actual_checksum\033[0m\n\n"
+            downloaded=true
         else
             print_message error "Verification of checksum \033[31mfailed\033[0m for \033[34m$file_name\033[0m.\n"
             print_message info "        - \033[32mExpected:\033[0m \033[34m$expected_checksum\033[0m\n"
@@ -895,7 +897,10 @@ rename_file() {
     # Check if the operating system is Linux or Windows.
     if [[ "$os" == *"Linux"* ]] || [[ "$os" == *"Windows"* ]]; then
         # Switch to the download directory.
-        cd "$download_dir"
+        cd "$download_dir" || {
+            print_message error "Failed to change to directory: \033[34m$download_dir\033[0m"
+            return 1
+        }
 
         # Check if the file exists.
         if [[ ! -f "$file_name" ]]; then

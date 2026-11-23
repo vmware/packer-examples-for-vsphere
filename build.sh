@@ -365,7 +365,7 @@ print_message() {
 
     if $logging_enabled; then
         # Remove color formatting from the log message
-        local no_color_message=$(echo -e "$message" | sed -r "s/\x1b\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g")]
+        local no_color_message=$(echo -e "$message" | sed -r "s/\x1b\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g")
         log_message "$type" "$no_color_message"
     fi
 }
