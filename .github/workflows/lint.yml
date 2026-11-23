@@ -22,6 +22,7 @@ jobs:
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           DEFAULT_BRANCH: develop
+          LINTER_RULES_PATH: "."
           DISABLE_ERRORS: false
           FILTER_REGEX_EXCLUDE: build.tmpl
           IGNORE_GITIGNORED_FILES: true
@@ -36,4 +37,3 @@ jobs:
           VALIDATE_TERRAFORM_FMT: true
           VALIDATE_TERRAFORM_TFLINT: true
           VALIDATE_YAML: true
-          YAML_CONFIG_FILE: .yamllint.yml
