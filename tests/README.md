@@ -16,6 +16,9 @@ The tests are written in [Bats](https://bats-core.readthedocs.io/en/stable/).
   - `brew install bats-core` on macOS
 - Run `bats test` on each directory
 
+The `set-envvars/` directory tests the `set-envvars.sh` script. Run it from the project root with
+`bats tests/set-envvars/test`. The Zsh and Packer tests are skipped when those tools are missing.
+
 ## Folder Structure
 
 - `templates/`: Template files

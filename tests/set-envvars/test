@@ -1,0 +1,318 @@
+#!/usr/bin/env bats
+# shellcheck disable=SC1003,SC2016 # Literal quotes and $ are intentional.
+
+setup() {
+  ROOT="$(cd "$BATS_TEST_DIRNAME/../.." >/dev/null 2>&1 && pwd)"
+  SCRIPT="$ROOT/set-envvars.sh"
+  ANSWERS="$BATS_TEST_TMPDIR/answers"
+  STDERR="$BATS_TEST_TMPDIR/stderr"
+}
+
+# Prints the prompt table from the script.
+fields() {
+  awk '/<<.FIELDS.$/ { on = 1; next } /^FIELDS$/ { on = 0 } on' "$SCRIPT"
+}
+
+# Writes the answers in prompt order from NAME=VALUE pairs, leaving other prompts blank.
+# Use _logging, _log_dir, and _display for the prompts outside the table.
+# Use newlines in a value to retry a prompt after invalid input.
+answers() {
+  local kind name default value last skip=false
+  answer_for() {
+    local pair
+    for pair in "${pairs[@]}"; do
+      if [[ "${pair%%=*}" == "$1" ]]; then
+        printf '%s' "${pair#*=}"
+        return 0
+      fi
+    done
+    return 1
+  }
+  is_yes() { [[ "$1" =~ ^([yY]|[yY][eE][sS]|[tT][rR][uU][eE])$ ]]; }
+  local -a pairs=("$@")
+  {
+    value=$(answer_for _logging) || value=''
+    printf '%s\n' "$value"
+    if is_yes "${value##*$'\n'}"; then
+      answer_for _log_dir || true
+      printf '\n'
+    fi
+    while IFS='|' read -r kind name default _; do
+      case "$kind" in
+      header) skip=false ;;
+      gate)
+        value=$(answer_for "$name") || value=''
+        printf '%s\n' "$value"
+        last=${value##*$'\n'}
+        if is_yes "${last:-$default}"; then skip=false; else skip=true; fi
+        ;;
+      *)
+        [[ "$skip" == true ]] && continue
+        answer_for "$name" || true
+        printf '\n'
+        ;;
+      esac
+    done < <(fields)
+    answer_for _display || true
+    printf '\n'
+  } >"$ANSWERS"
+}
+
+# Sources the script in a clean shell and prints the return code and Packer variables.
+# Arguments are NAME=VALUE pairs to export first.
+source_script() {
+  local shell=${SHELL_UNDER_TEST:-bash}
+  # shellcheck disable=SC2086 # The shell may include options.
+  run env -i HOME="$HOME" PATH="$PATH" "$@" $shell -c '
+    . "$1" < "$2" 2> "$3"
+    printf "__RC=%s\n" "$?"
+    env | grep -E "^(PKR_VAR_|PACKER_LOG)" | sort
+  ' _ "$SCRIPT" "$ANSWERS" "$STDERR"
+}
+
+## Invocation
+###############################################################################
+@test "set-envvars.sh refuses to run when executed instead of sourced" {
+  run env -i PATH="$PATH" bash "$SCRIPT" </dev/null
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"must be sourced"* ]]
+}
+
+@test "set-envvars.sh refuses to run when executed with zsh" {
+  command -v zsh >/dev/null || skip "zsh is not installed"
+  run env -i PATH="$PATH" zsh -f "$SCRIPT" </dev/null
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"must be sourced"* ]]
+}
+
+## Defaults
+###############################################################################
+@test "set-envvars.sh applies the defaults on blank input" {
+  answers
+  source_script
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"__RC=0"* ]]
+  [[ "$output" == *"PKR_VAR_common_vm_version=21"* ]]
+  [[ "$output" == *"PKR_VAR_ansible_username=ansible"* ]]
+  [[ "$output" == *"PKR_VAR_common_data_source=http"* ]]
+  [[ "$output" == *"PKR_VAR_common_http_port_min=8000"* ]]
+  [[ "$output" == *"PKR_VAR_common_http_port_max=8099"* ]]
+  [[ "$output" == *"PKR_VAR_common_ip_wait_timeout=20m"* ]]
+  [[ "$output" == *"PKR_VAR_common_content_library_enabled=true"* ]]
+  [[ "$output" == *"PKR_VAR_vsphere_insecure_connection=false"* ]]
+}
+
+@test "set-envvars.sh does not export blank values without a default" {
+  answers
+  source_script
+  [[ "$output" != *"PKR_VAR_vsphere_endpoint="* ]]
+  [[ "$output" != *"PKR_VAR_vsphere_password="* ]]
+  [[ "$output" != *"PKR_VAR_common_http_ip="* ]]
+  [[ "$output" != *"PKR_VAR_rhsm_activation_key="* ]]
+  [[ "$output" != *"PACKER_LOG"* ]]
+}
+
+@test "set-envvars.sh clears stale variables that are left blank" {
+  answers
+  source_script PKR_VAR_vsphere_host=stale PKR_VAR_communicator_proxy_password=stale \
+    PKR_VAR_vm_ip_address=10.0.0.1 PACKER_LOG=1 PACKER_LOG_PATH=/tmp/old.log
+  [[ "$output" == *"__RC=0"* ]]
+  [[ "$output" != *"stale"* ]]
+  [[ "$output" != *"PKR_VAR_vm_ip_address"* ]]
+  [[ "$output" != *"PACKER_LOG"* ]]
+}
+
+## Values
+###############################################################################
+@test "set-envvars.sh exports entered values exactly" {
+  answers vsphere_endpoint=vc01.example.com vsphere_username=svc-packer@example.com \
+    'vsphere_password=S3cr|et $HOME "q" '"'"'x\' vsphere_insecure_connection=y \
+    common_vm_version=22 common_data_source=disk build_username=packer \
+    'build_key=ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 packer@example.com'
+  source_script
+  [[ "$output" == *"__RC=0"* ]]
+  [[ "$output" == *"PKR_VAR_vsphere_endpoint=vc01.example.com"* ]]
+  [[ "$output" == *"PKR_VAR_vsphere_username=svc-packer@example.com"* ]]
+  [[ "$output" == *'PKR_VAR_vsphere_password=S3cr|et $HOME "q" '"'"'x\'* ]]
+  [[ "$output" == *"PKR_VAR_vsphere_insecure_connection=true"* ]]
+  [[ "$output" == *"PKR_VAR_common_vm_version=22"* ]]
+  [[ "$output" == *"PKR_VAR_common_data_source=disk"* ]]
+  [[ "$output" == *"PKR_VAR_build_key=ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 packer@example.com"* ]]
+}
+
+@test "set-envvars.sh trims surrounding whitespace from non-secret values" {
+  answers 'vsphere_datacenter=  sfo-w01-dc01  ' 'vsphere_password=  padded  '
+  source_script
+  [[ "$output" == *"PKR_VAR_vsphere_datacenter=sfo-w01-dc01"$'\n'* ]]
+  [[ "$output" == *"PKR_VAR_vsphere_password=  padded  "* ]]
+}
+
+@test "set-envvars.sh prompts again after invalid input" {
+  answers vsphere_insecure_connection=$'maybe\nn' \
+    common_vm_version=$'abc\n021\n100\n20' \
+    common_data_source=$'ftp\nhttp' \
+    common_http_port_min=$'0\n70000\n8100' \
+    common_ip_wait_timeout=$'20 minutes\n1h30m' \
+    common_http_ip=$'300.1.1.1\n172.16.11.10'
+  source_script
+  [[ "$output" == *"__RC=0"* ]]
+  [[ "$output" == *"PKR_VAR_vsphere_insecure_connection=false"* ]]
+  [[ "$output" == *"PKR_VAR_common_vm_version=20"* ]]
+  [[ "$output" == *"PKR_VAR_common_data_source=http"* ]]
+  [[ "$output" == *"PKR_VAR_common_http_port_min=8100"* ]]
+  [[ "$output" == *"PKR_VAR_common_ip_wait_timeout=1h30m"* ]]
+  [[ "$output" == *"PKR_VAR_common_http_ip=172.16.11.10"* ]]
+  [ "$(grep -c 'Invalid value' "$STDERR")" -eq 9 ]
+  grep -q 'Enter a whole number from 1 to 99.' "$STDERR"
+  grep -q 'Enter one of: http, disk.' "$STDERR"
+}
+
+## Optional sections
+###############################################################################
+@test "set-envvars.sh exports a static IP configuration with an HCL DNS list" {
+  answers vm_static_ip=y vm_ip_address=172.16.100.192 vm_ip_netmask=$'33\n24' \
+    vm_ip_gateway=172.16.100.1 'vm_dns_list=172.16.11.4, 172.16.11.5'
+  source_script
+  [[ "$output" == *"__RC=0"* ]]
+  [[ "$output" == *"PKR_VAR_vm_ip_address=172.16.100.192"* ]]
+  [[ "$output" == *"PKR_VAR_vm_ip_netmask=24"* ]]
+  [[ "$output" == *"PKR_VAR_vm_ip_gateway=172.16.100.1"* ]]
+  [[ "$output" == *'PKR_VAR_vm_dns_list=["172.16.11.4","172.16.11.5"]'* ]]
+}
+
+@test "set-envvars.sh skips and clears a section when its gate is declined" {
+  answers communicator_proxy=n
+  source_script PKR_VAR_communicator_proxy_host=proxy.example.com PKR_VAR_rhsm_organization=1234567
+  [[ "$output" == *"__RC=0"* ]]
+  [[ "$output" != *"communicator_proxy"* ]]
+  [[ "$output" != *"rhsm_organization"* ]]
+}
+
+@test "set-envvars.sh exports a section when its gate is accepted" {
+  answers communicator_proxy=y communicator_proxy_host=proxy.example.com \
+    communicator_proxy_port=8080 communicator_proxy_username=packer \
+    communicator_proxy_password=Pr0xy rhsm=y rhsm_activation_key=key-123 rhsm_organization=1234567 \
+    scc=y scc_email=packer@example.com scc_code=code-123
+  source_script
+  [[ "$output" == *"PKR_VAR_communicator_proxy_host=proxy.example.com"* ]]
+  [[ "$output" == *"PKR_VAR_communicator_proxy_port=8080"* ]]
+  [[ "$output" == *"PKR_VAR_communicator_proxy_password=Pr0xy"* ]]
+  [[ "$output" == *"PKR_VAR_rhsm_activation_key=key-123"* ]]
+  [[ "$output" == *"PKR_VAR_rhsm_organization=1234567"* ]]
+  [[ "$output" == *"PKR_VAR_scc_code=code-123"* ]]
+}
+
+@test "set-envvars.sh enables Packer logging to an existing directory" {
+  answers _logging=y _log_dir=$'/nonexistent/path\n'"$BATS_TEST_TMPDIR/"
+  source_script
+  [[ "$output" == *"__RC=0"* ]]
+  [[ "$output" == *"PACKER_LOG=1"* ]]
+  [[ "$output" == *"PACKER_LOG_PATH=$BATS_TEST_TMPDIR/packer.log"* ]]
+  grep -q 'Enter an existing directory.' "$STDERR"
+}
+
+@test "set-envvars.sh enables Packer logging to the terminal" {
+  answers _logging=y
+  source_script PACKER_LOG_PATH=/tmp/old.log
+  [[ "$output" == *"PACKER_LOG=1"* ]]
+  [[ "$output" != *"PACKER_LOG_PATH"* ]]
+}
+
+## Display
+###############################################################################
+@test "set-envvars.sh masks secrets when displaying the variables" {
+  answers vsphere_username=admin vsphere_password=Sup3rS3cret build_password=Bu1ldS3cret \
+    build_password_encrypted='$6$salt$hash' _display=y
+  source_script
+  [[ "$output" == *"- PKR_VAR_vsphere_username: admin"* ]]
+  [[ "$output" == *"- PKR_VAR_vsphere_password: ********"* ]]
+  [[ "$output" == *"- PKR_VAR_build_password: ********"* ]]
+  [[ "$output" == *"- PKR_VAR_build_password_encrypted: ********"* ]]
+  [[ "$output" == *"- PKR_VAR_scc_code: (not set)"* ]]
+  [[ "$output" == *"- PACKER_LOG: (not set)"* ]]
+  [ "$(grep -c 'Sup3rS3cret' <<<"$output")" -eq 1 ]
+  [ "$(grep -c 'Bu1ldS3cret' <<<"$output")" -eq 1 ]
+}
+
+## Safety
+###############################################################################
+@test "set-envvars.sh changes nothing when input ends early" {
+  printf 'n\nvc01.example.com\nadmin\n' >"$ANSWERS"
+  source_script PKR_VAR_vsphere_endpoint=keep PKR_VAR_vsphere_host=keep
+  [[ "$output" == *"__RC=1"* ]]
+  [[ "$output" == *"PKR_VAR_vsphere_endpoint=keep"* ]]
+  [[ "$output" == *"PKR_VAR_vsphere_host=keep"* ]]
+  [[ "$output" != *"PKR_VAR_common_vm_version"* ]]
+  grep -q 'No variables were changed.' "$STDERR"
+}
+
+@test "set-envvars.sh leaves no helper functions or working variables in the shell" {
+  answers vsphere_password=L3akCheck
+  run env -i HOME="$HOME" PATH="$PATH" bash -c '
+    . "$1" < "$2" 2>/dev/null
+    declare -F | grep __pev || true
+    set | grep -Ev "^(PKR_VAR_|BASH_EXECUTION_STRING=)" | grep -E "L3akCheck|^__pev|^(changes|value|kind|label)=" || true
+  ' _ "$SCRIPT" "$ANSWERS"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "set-envvars.sh preserves the positional parameters of the calling shell" {
+  answers
+  run env -i HOME="$HOME" PATH="$PATH" bash -c '
+    script=$1 input=$2
+    set -- one two
+    . "$script" < "$input" 2>/dev/null
+    printf "%s\n" "$#"
+  ' _ "$SCRIPT" "$ANSWERS"
+  [ "$output" = "2" ]
+}
+
+## Compatibility
+###############################################################################
+@test "set-envvars.sh works when sourced from zsh" {
+  command -v zsh >/dev/null || skip "zsh is not installed"
+  answers vsphere_endpoint=vc01.example.com 'vsphere_password=S3cr|et' vm_static_ip=y \
+    vm_ip_address=172.16.100.192 'vm_dns_list=172.16.11.4,172.16.11.5' _display=y
+  SHELL_UNDER_TEST="zsh -f" source_script
+  [[ "$output" == *"__RC=0"* ]]
+  [[ "$output" == *"PKR_VAR_vsphere_endpoint=vc01.example.com"* ]]
+  [[ "$output" == *"PKR_VAR_vsphere_password=S3cr|et"* ]]
+  [[ "$output" == *"PKR_VAR_common_vm_version=21"* ]]
+  [[ "$output" == *'PKR_VAR_vm_dns_list=["172.16.11.4","172.16.11.5"]'* ]]
+  [[ "$output" == *"- PKR_VAR_vsphere_password: ********"* ]]
+}
+
+@test "every variable set by set-envvars.sh is declared by a build" {
+  local declared name missing=()
+  declared=$(cat "$ROOT"/builds/*/*/*/variables*.pkr.hcl "$ROOT"/builds/linux/*/*/variables*.pkr.hcl |
+    sed -n 's/^variable "\([a-z0-9_]*\)".*/\1/p' | sort -u)
+  while IFS='|' read -r kind name _ _; do
+    [[ "$kind" == header || "$kind" == gate ]] && continue
+    grep -qx "$name" <<<"$declared" || missing+=("$name")
+  done < <(fields)
+  [ "${#missing[@]}" -eq 0 ] || {
+    printf 'Not declared by any build: %s\n' "${missing[@]}"
+    return 1
+  }
+}
+
+@test "Packer parses the exported values with the declared variable types" {
+  command -v packer >/dev/null || skip "packer is not installed"
+  mkdir -p "$BATS_TEST_TMPDIR/template"
+  cat >"$BATS_TEST_TMPDIR/template/variables.pkr.hcl" <<'EOF'
+variable "vm_dns_list" { type = list(string) }
+variable "vm_ip_netmask" { type = number }
+variable "common_vm_version" { type = number }
+variable "vsphere_insecure_connection" { type = bool }
+variable "common_ip_wait_timeout" { type = string }
+EOF
+  answers vm_static_ip=y vm_ip_netmask=24 'vm_dns_list=172.16.11.4,172.16.11.5'
+  run env -i HOME="$HOME" PATH="$PATH" bash -c '
+    . "$1" < "$2" 2>/dev/null
+    echo "jsonencode([var.vm_dns_list, var.vm_ip_netmask, var.common_vm_version, var.vsphere_insecure_connection, var.common_ip_wait_timeout])" |
+      packer console "$3"
+  ' _ "$SCRIPT" "$ANSWERS" "$BATS_TEST_TMPDIR/template"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'[["172.16.11.4","172.16.11.5"],24,21,false,"20m"]'* ]]
+}

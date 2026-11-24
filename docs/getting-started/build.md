@@ -152,7 +152,15 @@ You can add the environmental variables using the `set-envvars.sh` script.
 
 ???+ tip "Tip"
 
-    You must run the script as source or the shorthand "`.`".
+    You must run the script as source or the shorthand "`.`" from Bash or Zsh.
+
+- Press Enter to accept the value shown in brackets.
+- Leave other prompts blank to use the value from the configuration files.
+- The script prompts again when a value is not valid, such as a port outside `1`–`65535`.
+- The static IP, proxy, Red Hat Subscription Manager, and SUSE Customer Center sections are only
+  prompted for when you choose to configure them. Otherwise, their variables are cleared.
+- Variables are only changed after every prompt is answered.
+- Secrets are masked when you display the environment variables.
 ---
 
 ???+ note "Content Library"
