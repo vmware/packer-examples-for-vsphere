@@ -19,7 +19,6 @@ script_path=$(
 )
 
 run_check_dependencies=false
-run_check_jq=false
 run_show_help=false
 
 # This function prompts the user to press Enter to continue.
@@ -113,7 +112,8 @@ check_jq() {
 
 check_ansible() {
     cmd="ansible"
-    local deps_version=$(jq -r --arg cmd $cmd '.dependencies[] | select(.name == $cmd ) | .version_requirement' $json_path)
+    local deps_version
+    deps_version=$(jq -r --arg cmd $cmd '.dependencies[] | select(.name == $cmd ) | .version_requirement' $json_path)
     required_version=$(echo "$deps_version" | tr -d '>=' | xargs)
     if ! command -v $cmd &>/dev/null; then
         echo -e "\033[0;31m[✘]\033[0m $cmd is not installed. $required_version or later is required."
@@ -129,7 +129,8 @@ check_ansible() {
 
 check_packer() {
     cmd="packer"
-    local deps_version=$(jq -r --arg cmd $cmd '.dependencies[] | select(.name == $cmd ) | .version_requirement' $json_path)
+    local deps_version
+    deps_version=$(jq -r --arg cmd $cmd '.dependencies[] | select(.name == $cmd ) | .version_requirement' $json_path)
     required_version=$(echo "$deps_version" | tr -d '>=' | xargs)
     if ! command -v $cmd &>/dev/null; then
         echo -e "\033[0;31m[✘]\033[0mP $cmd is not installed. $required_version or later is required."
@@ -218,7 +219,6 @@ while (("$#")); do
     case "$1" in
     --json | -j | -J)
         json_path="$2"
-        run_check_jq=true
         shift 2
         ;;
     --deps | -d | -D)
@@ -250,7 +250,6 @@ while (("$#")); do
         shift
         ;;
     --debug | -b | -B)
-        debug=1
         debug_option="-debug"
         shift
         ;;
@@ -277,7 +276,7 @@ fi
 
 # Set the default values for the variables.
 os_names=$(jq -r '.os[] | .name' "$json_path")
-os_array=($os_names)
+IFS=$'\n' read -rd '' -a os_array <<<"$os_names"
 
 # Get the project information from the JSON file.
 get_project_info() {
@@ -365,7 +364,8 @@ print_message() {
 
     if $logging_enabled; then
         # Remove color formatting from the log message
-        local no_color_message=$(echo -e "$message" | sed -r "s/\x1b\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g")
+        local no_color_message
+        no_color_message=$(echo -e "$message" | sed -r "s/\x1b\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g")
         log_message "$type" "$no_color_message"
     fi
 }
@@ -384,15 +384,15 @@ print_title() {
     line_width=80
     title="${project_name} ${project_version}"
     subtitle="B U I L D"
-    padding_title=$((($line_width - ${#title}) / 2))
-    padding_subtitle=$((($line_width - ${#subtitle}) / 2))
+    padding_title=$(((line_width - ${#title}) / 2))
+    padding_subtitle=$(((line_width - ${#subtitle}) / 2))
 
     # Check if the current directory is a git repository
     if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         # Get the current branch name
         branch_name=$(git rev-parse --abbrev-ref HEAD)
         title="${title} (Branch: ${branch_name})"
-        padding_title=$((($line_width - ${#title}) / 2))
+        padding_title=$(((line_width - ${#title}) / 2))
 
         # Check if the branch name contains a /
         if [[ "$branch_name" == *"/"* ]]; then
@@ -406,13 +406,24 @@ print_title() {
     printf "\033[32m%*s%s\033[0m\n" $padding_subtitle '' "$subtitle"
 }
 
+# This function returns success if the first argument exactly matches any of the
+# remaining arguments.
+array_contains() {
+    local match="$1" element
+    shift
+    for element in "$@"; do
+        [[ "$element" == "$match" ]] && return 0
+    done
+    return 1
+}
+
 # This function selects the guest operating system family.
 # Only `Linux` and `Windows` are supported presently in the JSON file.
 select_os() {
     if [[ -n "$os" ]]; then
         # Check if the OS is supported.
-        if [[ ! " ${os_array[@]} " =~ " $os " ]]; then
-            printf "\033[0;31m✘ Error:\033[0m Unsupported OS: \033[0;33m$os\033[0m.\n"
+        if ! array_contains "$os" "${os_array[@]}"; then
+            printf "\033[0;31m✘ Error:\033[0m Unsupported OS: \033[0;33m%s\033[0m.\n" "$os"
             printf "\033[0;34mℹ  Supported OS options are:\033[0m\n"
             for os_item in "${os_array[@]}"; do
                 printf "\033[0;34m- %s\033[0m\n" "$os_item"
@@ -428,7 +439,7 @@ select_os() {
     print_title
     printf "\nSelect a guest operating system:\n\n"
     for i in "${!os_array[@]}"; do
-        printf "$((i + 1)): ${os_array[$i]}\n"
+        printf "%s: %s\n" "$((i + 1))" "${os_array[$i]}"
     done
     printf "\nEnter \033[31mq\033[0m to quit or \033[34mi\033[0m for info.\n\n"
 
@@ -466,23 +477,19 @@ select_distribution() {
 
     # Check if the distribution descriptions are empty.
     if [ -z "$dist_descriptions" ]; then
-        printf "\nNo distributions found for $os.\n"
+        printf "\nNo distributions found for %s.\n" "$os"
         select_os
         return
     fi
 
-    # Convert the distribution descriptions to an array.
-    IFS=$'\n' read -rd '' -a dist_array <<<"$dist_descriptions"
-
-    # Sort the array.
-    IFS=$'\n' dist_array=($(sort <<<"${dist_array[*]}"))
-    unset IFS
+    # Convert the distribution descriptions to a sorted array.
+    IFS=$'\n' read -rd '' -a dist_array <<<"$(echo "$dist_descriptions" | sort)"
 
     if [[ -n "$dist" ]]; then
         # Check if the distribution is supported.
-        if [[ ! " ${dist_array[@]} " =~ " $dist " ]]; then
-            printf "\033[0;31m✘ Error:\033[0m Unsupported distribution: \033[0;33m$dist\033[0m.\n"
-            printf "\033[0;34mℹ Supported distributions for \033[0;36m$os\033[0;34m are:\033[0m\n"
+        if ! array_contains "$dist" "${dist_array[@]}"; then
+            printf "\033[0;31m✘ Error:\033[0m Unsupported distribution: \033[0;33m%s\033[0m.\n" "$dist"
+            printf "\033[0;34mℹ Supported distributions for \033[0;36m%s\033[0;34m are:\033[0m\n" "$os"
             for dist_item in "${dist_array[@]}"; do
                 printf "\033[0;34m- %s\033[0m\n" "$dist_item"
             done
@@ -538,9 +545,9 @@ select_version() {
     IFS=$'\n' read -rd '' -a version_array <<<"$(echo "$version_descriptions" | sort -V -r)"
     if [[ -n "$version" ]]; then
         # Check if the version is supported.
-        if [[ ! " ${version_array[@]} " =~ " $version " ]]; then
-            printf "\033[0;31m✘ Error:\033[0m Unsupported version: \033[0;33m$version\033[0m.\n"
-            printf "\033[0;34mℹ Supported versions for \033[0;36m$dist\033[0;34m are:\033[0m\n"
+        if ! array_contains "$version" "${version_array[@]}"; then
+            printf "\033[0;31m✘ Error:\033[0m Unsupported version: \033[0;33m%s\033[0m.\n" "$version"
+            printf "\033[0;34mℹ Supported versions for \033[0;36m%s\033[0;34m are:\033[0m\n" "$dist"
             for version_item in "${version_array[@]}"; do
                 printf "\033[0;34m- %s\033[0m\n" "$version_item"
             done
@@ -560,7 +567,7 @@ select_version() {
     print_title
     printf "\nSelect a version:\n\n"
     for i in "${!version_array[@]}"; do
-        printf "$((i + 1)): $dist ${version_array[$i]}\n"
+        printf "%s: %s %s\n" "$((i + 1))" "$dist" "${version_array[$i]}"
     done
     printf "\n"
     prompt_user
@@ -594,9 +601,9 @@ select_edition() {
 
     if [[ -n "$edition" ]]; then
         # Check if the edition is supported.
-        if [[ ! " ${edition_array[@]} " =~ " $edition " ]]; then
-            printf "\033[0;31m✘ Error:\033[0m Unsupported edition: \033[0;33m$edition\033[0m.\n"
-            printf "\033[0;34mℹ Supported editions for \033[0;36m$dist\033[0;34m version \033[0;36m$version\033[0;34m are:\033[0m\n"
+        if ! array_contains "$edition" "${edition_array[@]}"; then
+            printf "\033[0;31m✘ Error:\033[0m Unsupported edition: \033[0;33m%s\033[0m.\n" "$edition"
+            printf "\033[0;34mℹ Supported editions for \033[0;36m%s\033[0;34m version \033[0;36m%s\033[0;34m are:\033[0m\n" "$dist" "$version"
             for edition_item in "${edition_array[@]}"; do
                 printf "\033[0;34m- %s\033[0m\n" "$edition_item"
             done
@@ -611,7 +618,7 @@ select_edition() {
     clear
     printf "\nSelect an edition:\n\n"
     for i in "${!edition_array[@]}"; do
-        printf "$((i + 1)): $dist ${edition_array[$i]}\n"
+        printf "%s: %s %s\n" "$((i + 1))" "$dist" "${edition_array[$i]}"
     done
     printf "\n"
     prompt_user
@@ -636,6 +643,9 @@ select_edition() {
     done
 }
 
+# The *_vars and BUILD_VARS variables set here are read indirectly through
+# ${!var_file} when the Packer command is built.
+# shellcheck disable=SC2034
 select_build() {
     if [[ "$dist" == *"Red Hat"* ]]; then
         dist_name="rhel"
@@ -655,12 +665,11 @@ select_build() {
     fi
 
     if [[ "$dist" == *"Ubuntu"* ]]; then
-        version=$version
         # Check if the suffix "-LTS" is already present before adding it.
         if [[ "$version" != *"-LTS" ]]; then
-            version=$(echo "$version" | sed 's/\./-/g')-LTS
+            version="${version//./-}-LTS"
         else
-            version=$(echo "$version" | sed 's/\./-/g')
+            version="${version//./-}"
         fi
         INPUT_PATH="$script_path"/builds/$(echo "$os" | tr '[:upper:]' '[:lower:]')/$(echo "$dist_name" | tr '[:upper:]' '[:lower:]')/$(echo "$version" | tr '[:upper:]' '[:lower:]')/
     else
@@ -669,7 +678,7 @@ select_build() {
     fi
 
     if [ ! -d "$INPUT_PATH" ]; then
-        printf "\n\033[0;31m✘ Error:\033[0m The build directory does not exist: \033[0;34m$INPUT_PATH\033[0m.\n"
+        printf "\n\033[0;31m✘ Error:\033[0m The build directory does not exist: \033[0;34m%s\033[0m.\n" "$INPUT_PATH"
 
         if [ "$auto_continue" = true ]; then
             printf "\n\033[0;36m➜ Auto-continue is enabled. Skipping user prompt and retrying...\033[0m\n"
