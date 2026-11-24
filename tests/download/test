@@ -226,6 +226,16 @@ RHEL_ISO=linux/red-hat-enterprise-linux/10/amd64/rhel-test.iso
   [ ! -e "$TMP/work/iso" ]
 }
 
+@test "download.sh finds the project file through a relative symbolic link" {
+  mkdir -p "$TMP/project" "$TMP/links/bin"
+  cp "$SCRIPT" "$TMP/project/download.sh"
+  write_project "$TMP/project/project.json" iso
+  ln -s ../../project/download.sh "$TMP/links/bin/download"
+  run_download '1\n1\n1\nq\n' "$TMP/links/bin/download"
+  [ "$status" -eq 0 ]
+  [ -f "$TMP/project/iso/$DEBIAN_ISO" ]
+}
+
 ## Menus
 ###############################################################################
 @test "download.sh shows the architecture menu for a two-architecture version" {
@@ -369,4 +379,26 @@ RHEL_ISO=linux/red-hat-enterprise-linux/10/amd64/rhel-test.iso
   run_download '1\n1\n1\nq\n' "$SCRIPT" --json "$TMP/project.json"
   [ "$status" -eq 0 ]
   [ -f "$TMP/My ISOs/$DEBIAN_ISO" ]
+}
+
+## Options
+###############################################################################
+@test "download.sh --help prints usage and exits without showing a menu" {
+  for flag in --help -h -H; do
+    run_download '' "$SCRIPT" "$flag"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Usage: download.sh [options]"* ]] || false
+    [[ "$output" != *"Select"* ]] || false
+  done
+  [ ! -s "$CALLS" ]
+}
+
+@test "download.sh rejects an invalid option or a missing value with status 2" {
+  run_download '' "$SCRIPT" --bogus
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"Invalid option: --bogus"*"Usage: download.sh [options]"* ]] || false
+  run_download '' "$SCRIPT" --json
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--json requires a value."* ]] || false
+  [ ! -s "$CALLS" ]
 }

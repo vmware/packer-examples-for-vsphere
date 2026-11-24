@@ -3,16 +3,19 @@
 # The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: BSD-2-Clause
 
-follow_link() {
-    file="$1"
-    while [ -L "$file" ]; do
-        file=$(readlink "$file")
+# Prints the directory of this script, following symbolic links relative to their directory.
+script_dir() {
+    local file=$1 dir
+    while [[ -L "$file" ]]; do
+        dir=$(cd -P -- "$(dirname -- "$file")" && pwd)
+        file=$(readlink -- "$file")
+        [[ "$file" == /* ]] || file="$dir/$file"
     done
-    echo "$file"
+    cd -P -- "$(dirname -- "$file")" && pwd
 }
 
 # Get the script path.
-script_path=$(realpath "$(dirname "$(follow_link "$0")")")
+script_path=$(script_dir "$0")
 
 # Default to the project file next to this script.
 json_path="$script_path/project.json"
@@ -20,7 +23,6 @@ restart_args=()
 
 run_check_dependencies=false
 run_check_jq=false
-run_show_help=false
 
 # This function prompts the user to press Enter to continue.
 press_enter_continue() {
@@ -36,13 +38,40 @@ press_enter_exit() {
     exit 0
 }
 
+# This function displays the help message.
+show_help() {
+    printf 'Usage: %s [options]\n\n' "$(basename -- "$0")"
+    printf 'Options:\n'
+    printf '  --help, -h, -H       Display the help message.\n'
+    printf '  --deps, -d, -D       Check the required dependencies.\n'
+    printf '  --json, -j, -J       Specify the project file.\n'
+    printf '                       Defaults to project.json next to this script.\n\n'
+    printf 'Environment:\n'
+    printf '  rhsm_offline_token   Specify the Red Hat Subscription Manager offline token for\n'
+    printf '                       Red Hat Enterprise Linux. Prompts for it when not set.\n'
+}
+
+# This function prints an error and the help, and exits with status 2.
+usage_error() {
+    printf '\033[0;31m✘ Error:\033[0m %s\n\n' "$1" >&2
+    show_help >&2
+    exit 2
+}
+
 if [ $# -eq 0 ]; then
     run_check_jq=true
 fi
 
 while (("$#")); do
     case "$1" in
+    --help | -h | -H)
+        show_help
+        exit 0
+        ;;
     --json | -j | -J)
+        if [[ $# -lt 2 || -z "$2" ]]; then
+            usage_error "$1 requires a value."
+        fi
         json_path="$2"
         [[ "$json_path" == /* ]] || json_path="$PWD/$json_path"
         restart_args=(--json "$json_path")
@@ -53,13 +82,8 @@ while (("$#")); do
         run_check_dependencies=true
         shift
         ;;
-    --help | -h | -H)
-        run_show_help=true
-        shift
-        ;;
     *)
-        printf "\033[33mInvalid Option:\033[0m %s\n\n" "$1"
-        press_enter_exit
+        usage_error "Invalid option: $1"
         ;;
     esac
 done
@@ -143,23 +167,6 @@ download_file() {
 # After the loop, check if check_jq needs to be run
 if $run_check_jq; then
     check_jq
-fi
-
-# This function displays the help message.
-show_help() {
-    printf "\nOptions:\n"
-    printf "  --deps, -d, -D       Check the dependencies.\n"
-    printf "  --json, -j, -J       Specify the JSON file path.\n"
-    printf "  --help, -h, -H       Display this help message.\n\n"
-    printf "Note: You can set an environment variable for the Red Hat Subscription Manager offline\n"
-    printf "      token to simplify downloading Red Hat Enterprise Linux.\n\n"
-    printf '      \033[32mexport rhsm_offline_token="your_rhsm_offline_token_value"\033[0m\n\n'
-    press_enter_continue
-}
-
-# After the loop, check if show_help needs to be run
-if $run_show_help; then
-    show_help
 fi
 
 # Set the default values for the variables.
@@ -740,6 +747,3 @@ while true; do
     [qQ]*) exit ;;
     esac
 done
-
-# TODO:
-# - Add support for SUSE Enterprise Linux Server download.

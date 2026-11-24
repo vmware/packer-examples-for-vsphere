@@ -121,11 +121,11 @@ Download the guest operating system ISOs using the download script (`./download.
 
 You can use the following options with the script.
 
-| Option   | Short Form | Description                                   |
-| -------- | ---------- | --------------------------------------------- |
-| `--help` | `-h`, `-H` | Display the help for the script.              |
-| `--json` | `-j`, `-J` | Override the default JSON configuration file. |
-| `--deps` | `-d`, `-D` | Check the the required dependencies.          |
+| Option   | Short Form | Description                                                               |
+| -------- | ---------- | ------------------------------------------------------------------------- |
+| `--help` | `-h`, `-H` | Display the help message.                                                 |
+| `--deps` | `-d`, `-D` | Check the required dependencies.                                          |
+| `--json` | `-j`, `-J` | Specify the project file. Defaults to `project.json` next to this script. |
 
 ## Upload ISOs
 
