@@ -133,7 +133,7 @@ check_packer() {
     deps_version=$(jq -r --arg cmd $cmd '.dependencies[] | select(.name == $cmd ) | .version_requirement' $json_path)
     required_version=$(echo "$deps_version" | tr -d '>=' | xargs)
     if ! command -v $cmd &>/dev/null; then
-        echo -e "\033[0;31m[✘]\033[0mP $cmd is not installed. $required_version or later is required."
+        echo -e "\033[0;31m[✘]\033[0m $cmd is not installed. $required_version or later is required."
         exit 1
     else
         installed_version=$($cmd version | head -n 1 | awk '{print $2}' | tr -d 'v')
