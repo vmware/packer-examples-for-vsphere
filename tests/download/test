@@ -1,0 +1,372 @@
+#!/usr/bin/env bats
+
+setup() {
+  ROOT="$(cd "$BATS_TEST_DIRNAME/../.." >/dev/null 2>&1 && pwd)"
+  SCRIPT="$ROOT/download.sh"
+  TMP="$BATS_TEST_TMPDIR"
+  SERVER="$TMP/server"
+  BIN="$TMP/bin"
+  CALLS="$TMP/calls.log"
+  STDIN_LOG="$TMP/stdin.log"
+  mkdir -p "$SERVER" "$BIN" "$TMP/work"
+  : >"$CALLS"
+  : >"$STDIN_LOG"
+
+  printf 'debian image\n' >"$SERVER/debian-13-amd64-netinst.iso"
+  printf '%s  debian-13-amd64-netinst.iso\n' "$(checksum "$SERVER/debian-13-amd64-netinst.iso")" >"$SERVER/SHA256SUMS"
+  printf 'test amd64 image\n' >"$SERVER/test-1-amd64.iso"
+  printf 'test arm64 image\n' >"$SERVER/test-1-arm64.iso"
+  printf 'rhel image\n' >"$SERVER/rhel-test.iso"
+  printf 'windows image\n' >"$SERVER/windows-eval.iso"
+  printf 'bsd image\n' >"$SERVER/test-bsd-1.iso"
+  printf 'SHA256 (other.iso) = 0000\nSHA256 (test-bsd-1.iso) = %s\n' "$(checksum "$SERVER/test-bsd-1.iso")" >"$SERVER/CHECKSUM"
+
+  FAKE_TOKEN_RESPONSE=${FAKE_TOKEN_RESPONSE-'{"access_token":"fake-access"}'}
+  sandbox_path
+  fake_curl
+  write_project "$TMP/project.json" "$TMP/iso"
+}
+
+# Fails if the file contains a match for the pattern.
+refute_grep() {
+  if grep -q -- "$1" "$2"; then
+    printf 'Unexpected match for %s in %s:\n' "$1" "$2"
+    cat "$2"
+    return 1
+  fi
+}
+
+checksum() {
+  sha256sum "$1" | cut -d ' ' -f 1
+}
+
+# Builds a PATH with only the tools the script needs, so curl and wget are the fakes.
+sandbox_path() {
+  local tool
+  for tool in awk basename bash cat cp cut date dirname find grep head jq md5sum mkdir mv \
+    readlink realpath rm sed sha1sum sha256sum sha512sum sleep sort touch tr xargs; do
+    ln -s "$(command -v "$tool")" "$BIN/$tool"
+  done
+  printf '#!/bin/sh\n' >"$BIN/clear"
+  chmod +x "$BIN/clear"
+}
+
+# Installs a fake curl that serves files from $SERVER and fakes the Red Hat APIs.
+fake_curl() {
+  cat >"$BIN/curl" <<'EOF'
+#!/usr/bin/env bash
+printf 'curl %s\n' "$*" >>"$CALLS"
+out='' head=false stdin=false url=''
+while [ $# -gt 0 ]; do
+  case $1 in
+  -o) out=$2; shift 2 ;;
+  --head) head=true; shift ;;
+  -H | --data-urlencode) [[ "$2" == *@- ]] && stdin=true; shift 2 ;;
+  -d) shift 2 ;;
+  http*) url=$1; shift ;;
+  *) shift ;;
+  esac
+done
+$stdin && printf '%s\n' "$(cat)" >>"$STDIN_LOG"
+case $url in
+*sso.redhat.com*) printf '%s' "$FAKE_TOKEN_RESPONSE"; exit 0 ;;
+*api.access.redhat.com*)
+  printf '{"body":{"filename":"rhel-test.iso","href":"https://downloads.example.com/rhel-test.iso"}}'
+  exit 0
+  ;;
+esac
+file="$SERVER/$(basename "${url%%\?*}")"
+[ -f "$file" ] || exit 22
+$head && exit 0
+# shellcheck disable=SC2053 # FAKE_FAIL_GET is a glob.
+if [[ -n "${FAKE_FAIL_GET:-}" && "$url" == $FAKE_FAIL_GET ]]; then
+  printf 'partial' >"$out"
+  exit 22
+fi
+cp "$file" "$out"
+EOF
+  chmod +x "$BIN/curl"
+}
+
+# Installs a fake wget that serves files from $SERVER, and removes the fake curl.
+fake_wget() {
+  rm -f "$BIN/curl"
+  cat >"$BIN/wget" <<'EOF'
+#!/usr/bin/env bash
+printf 'wget %s\n' "$*" >>"$CALLS"
+out='' spider=false url=''
+while [ $# -gt 0 ]; do
+  case $1 in
+  -O) out=$2; shift 2 ;;
+  --spider) spider=true; shift ;;
+  http*) url=$1; shift ;;
+  *) shift ;;
+  esac
+done
+file="$SERVER/$(basename "$url")"
+[ -f "$file" ] || exit 8
+$spider && exit 0
+cp "$file" "$out"
+EOF
+  chmod +x "$BIN/wget"
+}
+
+# Writes a project file with Debian, Red Hat, a two-architecture Linux, a Linux with a BSD-style
+# checksum list, and Windows.
+write_project() {
+  cat >"$1" <<EOF
+{
+  "project": { "name": "Test", "version": "v0.0.0", "description": "", "urls": {}, "license": [{ "name": "" }] },
+  "settings": {
+    "iso_base_path": "$2",
+    "rename_iso": false,
+    "cleanup_failed_iso_verification": true,
+    "download_logging_enabled": false
+  },
+  "os": [
+    {
+      "name": "Linux",
+      "distributions": [
+        {
+          "description": "Debian",
+          "versions": { "13": [{ "version": "13", "architectures": [{
+            "architecture": "amd64",
+            "download_link": "https://cdimage.example.com/debian-13-amd64-netinst.iso",
+            "checksum_algorithm": "sha256",
+            "checksum": "https://cdimage.example.com/SHA256SUMS"
+          }] }] }
+        },
+        {
+          "description": "Red Hat Enterprise Linux",
+          "versions": { "10": [{ "version": "10", "architectures": [{
+            "architecture": "amd64",
+            "checksum_algorithm": "sha256",
+            "checksum": "$(checksum "$SERVER/rhel-test.iso")"
+          }] }] }
+        },
+        {
+          "description": "Test Linux",
+          "versions": { "1": [{ "version": "1", "architectures": [
+            {
+              "architecture": "amd64",
+              "download_link": "https://mirror.example.com/test-1-amd64.iso",
+              "checksum_algorithm": "sha256",
+              "checksum": "$(checksum "$SERVER/test-1-amd64.iso")"
+            },
+            {
+              "architecture": "arm64",
+              "download_link": "https://mirror.example.com/test-1-arm64.iso",
+              "checksum_algorithm": "sha256",
+              "checksum": "$(checksum "$SERVER/test-1-arm64.iso")"
+            }
+          ] }] }
+        },
+        {
+          "description": "Test Linux BSD",
+          "versions": { "1": [{ "version": "1", "architectures": [{
+            "architecture": "amd64",
+            "download_link": "https://mirror.example.com/test-bsd-1.iso",
+            "checksum_algorithm": "SHA256",
+            "checksum": "https://mirror.example.com/CHECKSUM"
+          }] }] }
+        }
+      ]
+    },
+    {
+      "name": "Windows",
+      "types": [
+        {
+          "description": "Windows Server",
+          "versions": { "2025": [{ "version": "2025", "architectures": [{
+            "architecture": "amd64",
+            "download_link": "https://go.example.com/windows-eval.iso?linkid=1",
+            "filename": "windows-server-2025-evaluation.iso"
+          }] }] }
+        }
+      ]
+    }
+  ]
+}
+EOF
+}
+
+# Runs a download script from $TMP/work with the given input and arguments.
+run_download() {
+  local input=$1 script=$2
+  shift 2
+  # shellcheck disable=SC2016 # The bash -c script expands its own arguments.
+  run env -i HOME="$HOME" PATH="$BIN" TERM=dumb CALLS="$CALLS" STDIN_LOG="$STDIN_LOG" \
+    SERVER="$SERVER" FAKE_TOKEN_RESPONSE="$FAKE_TOKEN_RESPONSE" \
+    FAKE_FAIL_GET="${FAKE_FAIL_GET:-}" \
+    bash -c 'cd "$1" && shift && printf "%b" "$1" | bash "${@:2}"' _ "$TMP/work" "$input" "$script" "$@"
+}
+
+DEBIAN_ISO=linux/debian/13/amd64/debian-13-amd64-netinst.iso
+RHEL_ISO=linux/red-hat-enterprise-linux/10/amd64/rhel-test.iso
+
+## Project file
+###############################################################################
+@test "download.sh uses the project file given with --json" {
+  cp "$TMP/project.json" "$TMP/work/custom.json"
+  run_download '1\n1\n1\nq\n' "$SCRIPT" --json custom.json
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"3: Test Linux"* ]] || false
+  [ -f "$TMP/iso/$DEBIAN_ISO" ]
+  [[ "$output" == *"Verification of checksum"*"successful"* ]] || false
+  [[ "$output" == *"Download completed successfully for Debian 13 amd64."* ]] || false
+}
+
+@test "download.sh defaults to the project file and ISO path next to the script" {
+  mkdir -p "$TMP/project"
+  cp "$SCRIPT" "$TMP/project/download.sh"
+  write_project "$TMP/project/project.json" iso
+  run_download '1\n1\n1\nq\n' "$TMP/project/download.sh"
+  [ "$status" -eq 0 ]
+  [ -f "$TMP/project/iso/$DEBIAN_ISO" ]
+  [ ! -e "$TMP/work/iso" ]
+}
+
+## Menus
+###############################################################################
+@test "download.sh shows the architecture menu for a two-architecture version" {
+  run_download '1\n3\n1\n2\nq\n' "$SCRIPT" --json "$TMP/project.json"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"1: amd64"*"2: arm64"* ]] || false
+  [[ "$output" != *"command not found"* ]] || false
+  [ -f "$TMP/iso/linux/test-linux/1/arm64/test-1-arm64.iso" ]
+}
+
+## Verification
+###############################################################################
+@test "download.sh fails verification and removes the ISO on a checksum mismatch" {
+  printf '%s  debian-13-amd64-netinst.iso\n' "$(printf 'other' | sha256sum | cut -d ' ' -f 1)" >"$SERVER/SHA256SUMS"
+  run_download '1\n1\n1\n\nq\n' "$SCRIPT" --json "$TMP/project.json"
+  [[ "$output" == *"Verification of checksum"*"failed"* ]] || false
+  [[ "$output" != *"Download completed successfully"* ]] || false
+  [ ! -f "$TMP/iso/$DEBIAN_ISO" ]
+}
+
+@test "download.sh reports a failed download and removes the partial file" {
+  FAKE_FAIL_GET='*.iso' run_download '1\n1\n1\nq\n' "$SCRIPT" --json "$TMP/project.json"
+  [ "$status" -eq 0 ]
+  grep -q -- '-fL -o .*debian-13-amd64-netinst.iso' "$CALLS"
+  [[ "$output" == *"Download"*"failed"* ]] || false
+  [[ "$output" != *"Download completed successfully"* ]] || false
+  [ ! -f "$TMP/iso/$DEBIAN_ISO" ]
+}
+
+@test "download.sh downloads with wget when curl is not installed" {
+  fake_wget
+  run_download '1\n1\n1\nq\n' "$SCRIPT" --json "$TMP/project.json"
+  [ "$status" -eq 0 ]
+  [ -f "$TMP/iso/$DEBIAN_ISO" ]
+  [[ "$output" == *"Download completed successfully for Debian 13 amd64."* ]] || false
+}
+
+@test "download.sh downloads Windows media to the filename in the project file" {
+  run_download '2\n1\n1\nq\n' "$SCRIPT" --json "$TMP/project.json"
+  [ "$status" -eq 0 ]
+  [ -f "$TMP/iso/windows/windows-server/2025/amd64/windows-server-2025-evaluation.iso" ]
+  [[ "$output" == *"Download completed successfully for Windows Server 2025 amd64."* ]] || false
+}
+
+## Existing files
+###############################################################################
+@test "download.sh continues over an existing ISO with an upper-case answer" {
+  mkdir -p "$(dirname "$TMP/iso/$DEBIAN_ISO")"
+  printf 'old' >"$TMP/iso/$DEBIAN_ISO"
+  run_download '1\n1\n1\nC\nq\n' "$SCRIPT" --json "$TMP/project.json"
+  [[ "$output" == *"Existing ISO file found"* ]] || false
+  [ "$(cat "$TMP/iso/$DEBIAN_ISO")" = "debian image" ]
+}
+
+@test "download.sh does not download the old selection after going back" {
+  mkdir -p "$(dirname "$TMP/iso/$DEBIAN_ISO")"
+  printf 'old' >"$TMP/iso/$DEBIAN_ISO"
+  run_download '1\n1\n1\nb\n3\n1\n1\nq\n' "$SCRIPT" --json "$TMP/project.json"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Existing ISO file found"* ]] || false
+  [ "$(cat "$TMP/iso/$DEBIAN_ISO")" = "old" ]
+  [ -f "$TMP/iso/linux/test-linux/1/amd64/test-1-amd64.iso" ]
+  [ "$(grep -c -- ' -o [^ ]*test-1-amd64.iso' "$CALLS")" -eq 1 ]
+  refute_grep '-fL -o .*debian-13-amd64-netinst.iso' "$CALLS"
+}
+
+## Red Hat Enterprise Linux
+###############################################################################
+@test "download.sh keeps the Red Hat tokens out of the process arguments" {
+  run_download '1\n2\n1\naaa.bbb.ccc\naaa.bbb.ccc\nq\n' "$SCRIPT" --json "$TMP/project.json"
+  [ "$status" -eq 0 ]
+  [ -f "$TMP/iso/$RHEL_ISO" ]
+  [[ "$output" == *"Download completed successfully for Red Hat Enterprise Linux 10 amd64."* ]] || false
+  refute_grep 'aaa.bbb.ccc' "$CALLS"
+  refute_grep 'fake-access' "$CALLS"
+  grep -qx 'aaa.bbb.ccc' "$STDIN_LOG"
+  grep -qx 'Authorization: Bearer fake-access' "$STDIN_LOG"
+}
+
+@test "download.sh stops when Red Hat returns no access token" {
+  FAKE_TOKEN_RESPONSE='{"access_token":null}' \
+    run_download '1\n2\n1\naaa.bbb.ccc\naaa.bbb.ccc\nq\n' "$SCRIPT" --json "$TMP/project.json"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Failed to get an access token"* ]] || false
+  grep -q 'sso.redhat.com' "$CALLS"
+  refute_grep 'api.access.redhat.com' "$CALLS"
+  [ ! -e "$TMP/iso/$RHEL_ISO" ]
+}
+
+@test "download.sh skips the Red Hat download when the existing ISO matches" {
+  mkdir -p "$(dirname "$TMP/iso/$RHEL_ISO")"
+  cp "$SERVER/rhel-test.iso" "$TMP/iso/$RHEL_ISO"
+  run_download '1\n2\n1\naaa.bbb.ccc\naaa.bbb.ccc\nq\n' "$SCRIPT" --json "$TMP/project.json"
+  [[ "$output" == *"matches the checksum. Skipping the download."* ]] || false
+  [[ "$output" != *"Checksum does not match"* ]] || false
+  refute_grep 'downloads.example.com' "$CALLS"
+  [[ "$output" == *"Download completed successfully for Red Hat Enterprise Linux 10 amd64."* ]] || false
+}
+
+@test "download.sh downloads Red Hat again when the existing ISO does not match" {
+  mkdir -p "$(dirname "$TMP/iso/$RHEL_ISO")"
+  printf 'corrupt' >"$TMP/iso/$RHEL_ISO"
+  run_download '1\n2\n1\naaa.bbb.ccc\naaa.bbb.ccc\nC\nq\n' "$SCRIPT" --json "$TMP/project.json"
+  [[ "$output" == *"Checksum does not match"* ]] || false
+  [ "$(cat "$TMP/iso/$RHEL_ISO")" = "rhel image" ]
+}
+
+## Checksums
+###############################################################################
+@test "download.sh reads a checksum list in ALGO (file) = hash format" {
+  run_download '1\n4\n1\nq\n' "$SCRIPT" --json "$TMP/project.json"
+  [ "$status" -eq 0 ]
+  [ -f "$TMP/iso/linux/test-linux-bsd/1/amd64/test-bsd-1.iso" ]
+  [[ "$output" == *"Download completed successfully for Test Linux BSD 1 amd64."* ]] || false
+}
+
+@test "download.sh stops before downloading when the list has no checksum for the file" {
+  printf 'SHA256 (other.iso) = 0000\n' >"$SERVER/CHECKSUM"
+  run_download '1\n4\n1\nq\n' "$SCRIPT" --json "$TMP/project.json"
+  [[ "$output" == *"No checksum for"*"test-bsd-1.iso"* ]] || false
+  refute_grep ' -o [^ ]*test-bsd-1.iso' "$CALLS"
+  [ ! -e "$TMP/iso/linux/test-linux-bsd/1/amd64/test-bsd-1.iso" ]
+}
+
+@test "download.sh skips the download when an existing ISO matches the checksum list" {
+  mkdir -p "$(dirname "$TMP/iso/$DEBIAN_ISO")"
+  cp "$SERVER/debian-13-amd64-netinst.iso" "$TMP/iso/$DEBIAN_ISO"
+  run_download '1\n1\n1\nq\n' "$SCRIPT" --json "$TMP/project.json"
+  [[ "$output" == *"matches the checksum. Skipping the download."* ]] || false
+  refute_grep ' -o [^ ]*debian-13-amd64-netinst.iso' "$CALLS"
+  [[ "$output" == *"Download completed successfully for Debian 13 amd64."* ]] || false
+}
+
+@test "download.sh warns when no checksum is published" {
+  run_download '2\n1\n1\nq\n' "$SCRIPT" --json "$TMP/project.json"
+  [[ "$output" == *"No checksum is published for"*"windows-server-2025-evaluation.iso"* ]] || false
+}
+
+@test "download.sh keeps the case and spaces of an absolute ISO path" {
+  write_project "$TMP/project.json" "$TMP/My ISOs"
+  run_download '1\n1\n1\nq\n' "$SCRIPT" --json "$TMP/project.json"
+  [ "$status" -eq 0 ]
+  [ -f "$TMP/My ISOs/$DEBIAN_ISO" ]
+}
