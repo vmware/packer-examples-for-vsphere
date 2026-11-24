@@ -1,0 +1,6 @@
+@{
+    IncludeDefaultRules = $true
+    ExcludeRules        = @(
+        'PSUseBOMForUnicodeEncodedFile'
+    )
+}

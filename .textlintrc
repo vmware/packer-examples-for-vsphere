@@ -1,0 +1,10 @@
+{
+  "filters": {
+    "comments": true
+  },
+  "rules": {
+    "terminology": {
+      "exclude": ["bug[- ]fix(es)?"]
+    }
+  }
+}
