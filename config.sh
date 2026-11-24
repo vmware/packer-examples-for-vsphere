@@ -37,9 +37,9 @@ script_dir() {
 show_help() {
     printf 'Usage: %s [options] [config_path]\n\n' "$(basename -- "$0")"
     printf 'Options:\n'
-    printf '  --help, -h, -H       Display this help message.\n\n'
+    printf '  --help, -h, -H       Display the help message.\n\n'
     printf 'config_path:\n'
-    printf '  Path to save the generated configuration files. (Optional).\n'
+    printf '  Specify the configuration directory.\n'
     printf '  Defaults to config/ next to this script.\n'
 }
 
