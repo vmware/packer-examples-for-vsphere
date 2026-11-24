@@ -1,0 +1,49 @@
+---
+name: Tests
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PACKER_VERSION: 1.16.2
+
+jobs:
+  bats:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7.0.1
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@v3.4.0
+        with:
+          version: ${{ env.PACKER_VERSION }}
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends bats zsh
+      - name: Show Versions
+        run: |
+          bats --version
+          packer version
+          zsh --version
+      - name: Run Tests
+        shell: bash
+        run: |
+          bats --formatter tap tests/*/test | tee "$RUNNER_TEMP/results.tap"
+          # The suites skip tests when a tool is missing, so a skip here means the job lost coverage.
+          if grep -E '^ok .* # skip' "$RUNNER_TEMP/results.tap"; then
+            echo "::error::Tests were skipped. Install the missing tools in this workflow."
+            exit 1
+          fi

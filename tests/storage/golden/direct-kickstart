@@ -17,4 +17,3 @@ part /boot --label=BOOTFS --fstype xfs --size=1024
 part / --label=ROOTFS --fstype xfs --size=100 --grow
 
 ### Create a logical volume management (LVM) group.
-

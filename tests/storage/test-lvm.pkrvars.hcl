@@ -119,7 +119,7 @@ vm_disk_lvm = [
       },
       {
         name = "lv_audit",
-        size = 4096,
+        size = -1,
         format = {
           label  = "AUDITFS",
           fstype = "xfs",
