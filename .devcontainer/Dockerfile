@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 # Use the base Ubuntu devcontainer image.
-FROM mcr.microsoft.com/devcontainers/base:ubuntu
+FROM mcr.microsoft.com/devcontainers/base:3.0.14-ubuntu26.04
 
 # Install additional packages.
 RUN apt-get update && \
