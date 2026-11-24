@@ -297,7 +297,6 @@ build {
     strip_time = true
     custom_data = {
       build_username           = var.build_username
-      build_password           = var.build_password
       build_date               = local.build_date
       build_version            = local.build_version
       common_data_source       = var.common_data_source

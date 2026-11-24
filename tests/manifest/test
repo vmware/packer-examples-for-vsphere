@@ -1,0 +1,46 @@
+#!/usr/bin/env bats
+
+setup() {
+  ROOT="$(cd "$BATS_TEST_DIRNAME/../.." >/dev/null 2>&1 && pwd)"
+  BUILDS="${BUILDS_DIR:-$ROOT/builds}"
+}
+
+# Usernames are marked sensitive but are recorded in the manifest on purpose.
+ALLOWED="ansible_username build_username"
+
+# Prints the sensitive variables declared in a build directory.
+sensitive_variables() {
+  awk '/^variable "/ { name = $2; gsub(/"/, "", name) } /sensitive *= *true/ { print name }' \
+    "$1"/variables*.pkr.hcl | sort -u
+}
+
+# Prints the variables referenced in the manifest custom_data of a build directory.
+custom_data_variables() {
+  awk '/custom_data *= *\{/ { on = 1; next } on && /^ *\}/ { on = 0 } on' "$1"/*.pkr.hcl |
+    grep -o 'var\.[a-z0-9_]*' | sed 's/^var\.//' | sort -u
+}
+
+@test "manifests do not record sensitive variables" {
+  local dir name leaks=()
+  while IFS= read -r dir; do
+    while IFS= read -r name; do
+      [[ " $ALLOWED " == *" $name "* ]] && continue
+      leaks+=("${dir#"$BUILDS"/}: var.$name")
+    done < <(comm -12 <(sensitive_variables "$dir") <(custom_data_variables "$dir"))
+  done < <(find "$BUILDS" -name '*.pkr.hcl' ! -name 'variables*.pkr.hcl' -exec dirname {} \; | sort -u)
+  [ "${#leaks[@]}" -eq 0 ] || {
+    printf 'Sensitive variable in manifest custom_data: %s\n' "${leaks[@]}"
+    return 1
+  }
+}
+
+@test "every build has a manifest custom_data block to check" {
+  local dir missing=()
+  while IFS= read -r dir; do
+    [ -n "$(custom_data_variables "$dir")" ] || missing+=("${dir#"$BUILDS"/}")
+  done < <(find "$BUILDS" -name '*.pkr.hcl' ! -name 'variables*.pkr.hcl' -exec dirname {} \; | sort -u)
+  [ "${#missing[@]}" -eq 0 ] || {
+    printf 'No custom_data found: %s\n' "${missing[@]}"
+    return 1
+  }
+}
