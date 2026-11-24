@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # © Broadcom. All Rights Reserved.
-# The term “Broadcom” refers to Broadcom Inc. and/or its subsidiaries.
+# The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: BSD-2-Clause
 
 # Sets the Packer environment variables so credentials stay out of configuration files.
