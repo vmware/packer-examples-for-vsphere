@@ -1,6 +1,6 @@
 <!--
 © Broadcom. All Rights Reserved.
-The term “Broadcom” refers to Broadcom Inc. and/or its subsidiaries.
+The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 SPDX-License-Identifier: BSD-2-Clause
 -->
 
@@ -10,6 +10,6 @@ SPDX-License-Identifier: BSD-2-Clause
 
 The following are maintainers of this project.
 
-**Ryan Johnson**  
-VMware by Broadcom  
+**Ryan Johnson**
+VMware by Broadcom
 [@tenthirtyam](https://github.com/tenthirtyam)

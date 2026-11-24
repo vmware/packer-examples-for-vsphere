@@ -1,6 +1,6 @@
 <!--
 © Broadcom. All Rights Reserved.
-The term “Broadcom” refers to Broadcom Inc. and/or its subsidiaries.
+The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 SPDX-License-Identifier: BSD-2-Clause
 -->
 
@@ -87,7 +87,7 @@ You can also start a discussion on the [discussions][gh-discussions] area to ask
 
 ## License
 
-© Broadcom. All Rights Reserved. The term “Broadcom” refers to Broadcom Inc. and/or its subsidiaries.
+© Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 Available under the Simplified BSD License.
 
