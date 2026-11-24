@@ -31,7 +31,8 @@
   [#1056](https://github.com/vmware/packer-examples-for-vsphere/pull/1056),
   [#1074](https://github.com/vmware/packer-examples-for-vsphere/pull/1074),
   [#1094](https://github.com/vmware/packer-examples-for-vsphere/pull/1094),
-  [#1145](https://github.com/vmware/packer-examples-for-vsphere/pull/1145)
+  [#1145](https://github.com/vmware/packer-examples-for-vsphere/pull/1145),
+  [#1192](https://github.com/vmware/packer-examples-for-vsphere/pull/1192)
 - Adds Red Hat Enterprise Linux 10 to the project. Updates Red Hat subscription
   to use an activation key and organization.
   [#1114](https://github.com/vmware/packer-examples-for-vsphere/pull/1114),
