@@ -21,4 +21,4 @@ vm_firmware = "efi-secure"
 // Removable Media Settings
 iso_datastore_path       = "iso/windows/windows-server/2022/amd64"
 iso_content_library_item = "windows-server-2022-evaluation"
-iso_file                  = "windows-server-2022-evaluation.iso"
+iso_file                 = "windows-server-2022-evaluation.iso"

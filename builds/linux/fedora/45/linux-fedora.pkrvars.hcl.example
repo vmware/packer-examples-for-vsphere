@@ -22,4 +22,4 @@ vm_firmware = "efi-secure"
 // Removable Media Settings
 iso_datastore_path       = "iso/linux/fedora-server/45/amd64"
 iso_content_library_item = "Fedora-Server-dvd-x86_64-45-1.4"
-iso_file                  = "Fedora-Server-dvd-x86_64-45-1.4.iso"
+iso_file                 = "Fedora-Server-dvd-x86_64-45-1.4.iso"
