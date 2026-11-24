@@ -92,6 +92,7 @@ source "vsphere-iso" "windows-server-standard-core" {
   disk_controller_type = var.vm_disk_controller_type
   storage {
     disk_size             = var.vm_disk_size
+    disk_controller_index = 0
     disk_thin_provisioned = var.vm_disk_thin_provisioned
   }
   network_adapters {
@@ -332,8 +333,6 @@ source "vsphere-iso" "windows-server-datacenter-core" {
       build_username       = var.build_username
       build_password       = var.build_password
       vm_inst_os_eval      = var.vm_inst_os_eval
-      vm_inst_os_language  = var.vm_inst_os_language
-      vm_inst_os_keyboard  = var.vm_inst_os_keyboard
       vm_inst_os_language  = var.vm_inst_os_language
       vm_inst_os_keyboard  = var.vm_inst_os_keyboard
       vm_inst_os_image     = var.vm_inst_os_image_datacenter_core
