@@ -1,99 +1,127 @@
 #!/usr/bin/env bats
 
+# Renders the storage template of every Linux build and compares it with the golden file for its installer.
+# Run with UPDATE_GOLDEN=1 to rewrite the golden files from the first build of each installer.
+
 setup() {
-  DIR="$( cd "$( dirname "$BATS_TEST_FILENAME" )" >/dev/null 2>&1 && pwd )"
-  echo "$DIR"
-  packer init -upgrade "$DIR"
+  command -v packer >/dev/null || skip "packer is not installed"
+  ROOT="$(cd "$BATS_TEST_DIRNAME/../.." >/dev/null 2>&1 && pwd)"
+  DIR="$BATS_TEST_DIRNAME"
+}
+
+# Prints the installer that reads the templates of a distribution.
+installer() {
+  case "$1" in
+  almalinux | centos | fedora | oracle | rhel | rocky) echo kickstart ;;
+  debian) echo preseed ;;
+  ubuntu) echo autoinstall ;;
+  *) return 1 ;;
+  esac
+}
+
+# Prints the storage template of every build, one per line.
+templates() {
+  find "$ROOT/builds/linux" -path '*/data/storage.pkrtpl.hcl' | sort
+}
+
+# Prints the distribution of a template, e.g. rhel for builds/linux/rhel/9/data/storage.pkrtpl.hcl.
+distribution() {
+  local path=${1#"$ROOT"/builds/linux/}
+  printf '%s\n' "${path%%/*}"
+}
+
+# Renders the template of every build that uses an installer and compares it with a golden file.
+check() {
+  local installer=$1 vars=$2 golden="$DIR/golden/$3" template build output count=0 failed=0
+  while IFS= read -r template; do
+    [ "$(installer "$(distribution "$template")")" = "$installer" ] || continue
+    build=${template#"$ROOT"/builds/linux/}
+    build=${build%/data/*}
+    # Builds that share a template file are rendered once.
+    output="$BATS_TEST_TMPDIR/$(cksum <"$template" | tr ' ' '-')"
+    if [ ! -f "$output" ] &&
+      ! packer build -var-file="$DIR/$vars" -var "template=$template" -var "output_file=$output" "$DIR" \
+        >"$output.log" 2>&1; then
+      printf 'Failed to render %s:\n' "$build"
+      cat "$output.log"
+      return 1
+    fi
+    if [ "${UPDATE_GOLDEN:-}" = 1 ] && [ "$count" -eq 0 ]; then
+      cp "$output" "$golden"
+    fi
+    count=$((count + 1))
+    diff -u --label "golden/$3" --label "$build" "$golden" "$output" || failed=1
+  done < <(templates)
+  [ "$count" -gt 0 ] || {
+    printf 'No builds use %s.\n' "$installer"
+    return 1
+  }
+  return "$failed"
+}
+
+@test "each storage template belongs to a tested installer" {
+  local template unknown=()
+  while IFS= read -r template; do
+    installer "$(distribution "$template")" >/dev/null || unknown+=("${template#"$ROOT"/}")
+  done < <(templates)
+  [ "${#unknown[@]}" -eq 0 ] || {
+    printf 'No installer for: %s\n' "${unknown[@]}"
+    return 1
+  }
 }
 
 ## Test LVM layout
 ###############################################################################
 @test "storage with Autoinstall using LVM layout" {
-  mkdir -p "$DIR/output/lvm"
-  packer build -var-file="$DIR/test-lvm.pkrvars.hcl" -var "output_folder=$DIR/output/lvm" -only "autoinstall.*" "$DIR"
-  run diff -u "$DIR/output/lvm/autoinstall" "$DIR/golden/lvm-autoinstall"
-  [ "$status" -eq 0 ]
+  check autoinstall test-lvm.pkrvars.hcl lvm-autoinstall
 }
 
 @test "storage with Kickstart using LVM layout" {
-  mkdir -p "$DIR/output/lvm"
-  packer build -var-file="$DIR/test-lvm.pkrvars.hcl" -var "output_folder=$DIR/output/lvm" -only "kickstart.*" "$DIR"
-  run diff -u "$DIR/output/lvm/kickstart" "$DIR/golden/lvm-kickstart"
-  [ "$status" -eq 0 ]
+  check kickstart test-lvm.pkrvars.hcl lvm-kickstart
 }
 
 @test "storage with Preseed using LVM layout" {
-  mkdir -p "$DIR/output/lvm"
-  packer build -var-file="$DIR/test-lvm.pkrvars.hcl" -var "output_folder=$DIR/output/lvm" -only "preseed.*" "$DIR"
-  run diff -u "$DIR/output/lvm/preseed" "$DIR/golden/lvm-preseed"
-  [ "$status" -eq 0 ]
+  check preseed test-lvm.pkrvars.hcl lvm-preseed
 }
 
 ## Test LVM layout with SWAP
 ###############################################################################
 @test "storage with Autoinstall using LVM layout with SWAP" {
-  mkdir -p "$DIR/output/lvm-swap"
-  packer build -var-file="$DIR/test-lvm-swap.pkrvars.hcl" -var "output_folder=$DIR/output/lvm-swap" -only "autoinstall.*" "$DIR"
-  run diff -u "$DIR/output/lvm-swap/autoinstall" "$DIR/golden/lvm-autoinstall-swap"
-  [ "$status" -eq 0 ]
+  check autoinstall test-lvm-swap.pkrvars.hcl lvm-autoinstall-swap
 }
 
 @test "storage with Kickstart using LVM layout with SWAP" {
-  mkdir -p "$DIR/output/lvm-swap"
-  packer build -var-file="$DIR/test-lvm-swap.pkrvars.hcl" -var "output_folder=$DIR/output/lvm-swap" -only "kickstart.*" "$DIR"
-  run diff -u "$DIR/output/lvm-swap/kickstart" "$DIR/golden/lvm-kickstart-swap"
-  [ "$status" -eq 0 ]
+  check kickstart test-lvm-swap.pkrvars.hcl lvm-kickstart-swap
 }
 
 @test "storage with Preseed using LVM layout with SWAP" {
-  mkdir -p "$DIR/output/lvm-swap"
-  packer build -var-file="$DIR/test-lvm-swap.pkrvars.hcl" -var "output_folder=$DIR/output/lvm-swap" -only "preseed.*" "$DIR"
-  run diff -u "$DIR/output/lvm-swap/preseed" "$DIR/golden/lvm-preseed-swap"
-  [ "$status" -eq 0 ]
+  check preseed test-lvm-swap.pkrvars.hcl lvm-preseed-swap
 }
 
 ## Test direct layout
 ###############################################################################
 @test "storage with Autoinstall using direct layout" {
-  mkdir -p "$DIR/output/direct"
-  packer build -var-file="$DIR/test-direct.pkrvars.hcl" -var "output_folder=$DIR/output/direct" -only "autoinstall.*" "$DIR"
-  run diff -u "$DIR/output/direct/autoinstall" "$DIR/golden/direct-autoinstall"
-  [ "$status" -eq 0 ]
+  check autoinstall test-direct.pkrvars.hcl direct-autoinstall
 }
 
 @test "storage with Kickstart using direct layout" {
-  mkdir -p "$DIR/output/direct"
-  packer build -var-file="$DIR/test-direct.pkrvars.hcl" -var "output_folder=$DIR/output/direct" -only "kickstart.*" "$DIR"
-  run diff -u "$DIR/output/direct/kickstart" "$DIR/golden/direct-kickstart"
-  [ "$status" -eq 0 ]
+  check kickstart test-direct.pkrvars.hcl direct-kickstart
 }
 
 @test "storage with Preseed using direct layout" {
-  mkdir -p "$DIR/output/direct"
-  packer build -var-file="$DIR/test-direct.pkrvars.hcl" -var "output_folder=$DIR/output/direct" -only "preseed.*" "$DIR"
-  run diff -u "$DIR/output/direct/preseed" "$DIR/golden/direct-preseed"
-  [ "$status" -eq 0 ]
+  check preseed test-direct.pkrvars.hcl direct-preseed
 }
 
 ## Test direct layout with SWAP
 ###############################################################################
 @test "storage with Autoinstall using direct layout with SWAP" {
-  mkdir -p "$DIR/output/direct-swap"
-  packer build -var-file="$DIR/test-direct-swap.pkrvars.hcl" -var "output_folder=$DIR/output/direct-swap" -only "autoinstall.*" "$DIR"
-  run diff -u "$DIR/output/direct-swap/autoinstall" "$DIR/golden/direct-autoinstall-swap"
-  [ "$status" -eq 0 ]
+  check autoinstall test-direct-swap.pkrvars.hcl direct-autoinstall-swap
 }
 
 @test "storage with Kickstart using direct layout with SWAP" {
-  mkdir -p "$DIR/output/direct-swap"
-  packer build -var-file="$DIR/test-direct-swap.pkrvars.hcl" -var "output_folder=$DIR/output/direct-swap" -only "kickstart.*" "$DIR"
-  run diff -u "$DIR/output/direct-swap/kickstart" "$DIR/golden/direct-kickstart-swap"
-  [ "$status" -eq 0 ]
+  check kickstart test-direct-swap.pkrvars.hcl direct-kickstart-swap
 }
 
 @test "storage with Preseed using direct layout with SWAP" {
-  mkdir -p "$DIR/output/direct-swap"
-  packer build -var-file="$DIR/test-direct-swap.pkrvars.hcl" -var "output_folder=$DIR/output/direct-swap" -only "preseed.*" "$DIR"
-  run diff -u "$DIR/output/direct-swap/preseed" "$DIR/golden/direct-preseed-swap"
-  [ "$status" -eq 0 ]
+  check preseed test-direct-swap.pkrvars.hcl direct-preseed-swap
 }

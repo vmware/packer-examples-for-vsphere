@@ -17,6 +17,9 @@ workflows:
         - 'actions/checkout@v7.0.1'
     '.github/workflows/stale.yml':
         - 'actions/stale@v11.0.0'
+    '.github/workflows/tests.yml':
+        - 'actions/checkout@v7.0.1'
+        - 'hashicorp/setup-packer@v3.4.0'
 dependencies:
     'actions/checkout@v7.0.1':
         ref: 'v7.0.1'
@@ -55,6 +58,11 @@ dependencies:
         commit: 'sha1-89ae32b08ed1a541efecbab17912962a5e38981c'
         owner_id: 7513068
         repo_id: 113918130
+    'hashicorp/setup-packer@v3.4.0':
+        ref: 'v3.4.0'
+        commit: 'sha1-ce93c3c08a6c2ff2275bf4b54ff0d9a75f6c9789'
+        owner_id: 761456
+        repo_id: 249712273
     'super-linter/super-linter@v9.0.0':
         ref: 'v9.0.0'
         commit: 'sha1-2da136927bd4a73596db63044b504547c62cb854'

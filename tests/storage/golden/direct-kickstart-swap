@@ -18,4 +18,3 @@ part swap --label=SWAPFS --fstype swap --size=1024
 part / --label=ROOTFS --fstype xfs --size=100 --grow
 
 ### Create a logical volume management (LVM) group.
-

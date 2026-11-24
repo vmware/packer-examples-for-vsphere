@@ -1,8 +1,7 @@
-# Partitioning
 d-i partman-auto/disk string /dev/sda
 d-i partman-auto/method string regular
 
-# Force UEFI booting (BIOS compatibility will be lost). Default: false.
+# Force UEFI booting ('BIOS compatibility' will be lost). Default: false.
 d-i partman-efi/non_efi_system boolean true
 
 # Ensure the partition table is GPT - this is required for EFI

@@ -134,7 +134,7 @@
       - id: partition-lv_audit
         type: lvm_partition
         name: lv_audit
-        size: 4096M
+        size: -1
         volgroup: volgroup-sysvg
       - id: format-lv_audit
         type: format
@@ -146,4 +146,3 @@
         path: /var/log/audit
         device: format-lv_audit
         options: nodev,noexec,nosuid
-

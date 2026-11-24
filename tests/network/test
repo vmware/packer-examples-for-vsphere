@@ -1,67 +1,108 @@
 #!/usr/bin/env bats
 
+# Renders the network template of every Linux build and compares it with the golden file for its installer.
+# Run with UPDATE_GOLDEN=1 to rewrite the golden files from the first build of each installer.
+
 setup() {
-  DIR="$( cd "$( dirname "$BATS_TEST_FILENAME" )" >/dev/null 2>&1 && pwd )"
-  echo "$DIR"
-  packer init -upgrade "$DIR"
+  command -v packer >/dev/null || skip "packer is not installed"
+  ROOT="$(cd "$BATS_TEST_DIRNAME/../.." >/dev/null 2>&1 && pwd)"
+  DIR="$BATS_TEST_DIRNAME"
+}
+
+# Prints the installer that reads the templates of a distribution.
+installer() {
+  case "$1" in
+  almalinux | centos | fedora | oracle | rhel | rocky) echo kickstart ;;
+  debian) echo preseed ;;
+  photon) echo photon ;;
+  ubuntu) echo autoinstall ;;
+  *) return 1 ;;
+  esac
+}
+
+# Prints the network template of every build, one per line.
+templates() {
+  find "$ROOT/builds/linux" -path '*/data/network.pkrtpl.hcl' | sort
+}
+
+# Prints the distribution of a template, e.g. rhel for builds/linux/rhel/9/data/network.pkrtpl.hcl.
+distribution() {
+  local path=${1#"$ROOT"/builds/linux/}
+  printf '%s\n' "${path%%/*}"
+}
+
+# Renders the template of every build that uses an installer and compares it with a golden file.
+check() {
+  local installer=$1 vars=$2 golden="$DIR/golden/$3" template build output count=0 failed=0
+  while IFS= read -r template; do
+    [ "$(installer "$(distribution "$template")")" = "$installer" ] || continue
+    build=${template#"$ROOT"/builds/linux/}
+    build=${build%/data/*}
+    # Builds that share a template file are rendered once.
+    output="$BATS_TEST_TMPDIR/$(cksum <"$template" | tr ' ' '-')"
+    if [ ! -f "$output" ] &&
+      ! packer build -var-file="$DIR/$vars" -var "template=$template" -var "output_file=$output" "$DIR" \
+        >"$output.log" 2>&1; then
+      printf 'Failed to render %s:\n' "$build"
+      cat "$output.log"
+      return 1
+    fi
+    if [ "${UPDATE_GOLDEN:-}" = 1 ] && [ "$count" -eq 0 ]; then
+      cp "$output" "$golden"
+    fi
+    count=$((count + 1))
+    diff -u --label "golden/$3" --label "$build" "$golden" "$output" || failed=1
+  done < <(templates)
+  [ "$count" -gt 0 ] || {
+    printf 'No builds use %s.\n' "$installer"
+    return 1
+  }
+  return "$failed"
+}
+
+@test "each network template belongs to a tested installer" {
+  local template unknown=()
+  while IFS= read -r template; do
+    installer "$(distribution "$template")" >/dev/null || unknown+=("${template#"$ROOT"/}")
+  done < <(templates)
+  [ "${#unknown[@]}" -eq 0 ] || {
+    printf 'No installer for: %s\n' "${unknown[@]}"
+    return 1
+  }
 }
 
 ## Test DHCP
 ###############################################################################
 @test "network with Autoinstall using DHCP" {
-  mkdir -p "$DIR/output/dhcp"
-  packer build -var-file="$DIR/test-dhcp.pkrvars.hcl" -var "output_folder=$DIR/output/dhcp" -only "autoinstall.*" "$DIR"
-  run diff -u "$DIR/output/dhcp/autoinstall" "$DIR/golden/dhcp-autoinstall"
-  [ "$status" -eq 0 ]
+  check autoinstall test-dhcp.pkrvars.hcl dhcp-autoinstall
 }
 
 @test "network with Kickstart using DHCP" {
-  mkdir -p "$DIR/output/dhcp"
-  packer build -var-file="$DIR/test-dhcp.pkrvars.hcl" -var "output_folder=$DIR/output/dhcp" -only "kickstart.*" "$DIR"
-  run diff -u "$DIR/output/dhcp/kickstart" "$DIR/golden/dhcp-kickstart"
-  [ "$status" -eq 0 ]
+  check kickstart test-dhcp.pkrvars.hcl dhcp-kickstart
 }
 
 @test "network with Preseed using DHCP" {
-  mkdir -p "$DIR/output/dhcp"
-  packer build -var-file="$DIR/test-dhcp.pkrvars.hcl" -var "output_folder=$DIR/output/dhcp" -only "preseed.*" "$DIR"
-  run diff -u "$DIR/output/dhcp/preseed" "$DIR/golden/dhcp-preseed"
-  [ "$status" -eq 0 ]
+  check preseed test-dhcp.pkrvars.hcl dhcp-preseed
 }
 
 @test "network with Photon using DHCP" {
-  mkdir -p "$DIR/output/dhcp"
-  packer build -var-file="$DIR/test-dhcp.pkrvars.hcl" -var "output_folder=$DIR/output/dhcp" -only "photon.*" "$DIR"
-  run diff -u "$DIR/output/dhcp/photon" "$DIR/golden/dhcp-photon"
-  [ "$status" -eq 0 ]
+  check photon test-dhcp.pkrvars.hcl dhcp-photon
 }
 
 ## Test static IP
 ###############################################################################
 @test "network with Autoinstall using static IP" {
-  mkdir -p "$DIR/output/static"
-  packer build -var-file="$DIR/test-static.pkrvars.hcl" -var "output_folder=$DIR/output/static" -only "autoinstall.*" "$DIR"
-  run diff -u "$DIR/output/static/autoinstall" "$DIR/golden/static-autoinstall"
-  [ "$status" -eq 0 ]
+  check autoinstall test-static.pkrvars.hcl static-autoinstall
 }
 
 @test "network with Kickstart using static IP" {
-  mkdir -p "$DIR/output/static"
-  packer build -var-file="$DIR/test-static.pkrvars.hcl" -var "output_folder=$DIR/output/static" -only "kickstart.*" "$DIR"
-  run diff -u "$DIR/output/static/kickstart" "$DIR/golden/static-kickstart"
-  [ "$status" -eq 0 ]
+  check kickstart test-static.pkrvars.hcl static-kickstart
 }
 
 @test "network with Preseed using static IP" {
-  mkdir -p "$DIR/output/static"
-  packer build -var-file="$DIR/test-static.pkrvars.hcl" -var "output_folder=$DIR/output/static" -only "preseed.*" "$DIR"
-  run diff -u "$DIR/output/static/preseed" "$DIR/golden/static-preseed"
-  [ "$status" -eq 0 ]
+  check preseed test-static.pkrvars.hcl static-preseed
 }
 
 @test "network with Photon using static IP" {
-  mkdir -p "$DIR/output/static"
-  packer build -var-file="$DIR/test-static.pkrvars.hcl" -var "output_folder=$DIR/output/static" -only "photon.*" "$DIR"
-  run diff -u "$DIR/output/static/photon" "$DIR/golden/static-photon"
-  [ "$status" -eq 0 ]
+  check photon test-static.pkrvars.hcl static-photon
 }

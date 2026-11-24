@@ -1,4 +1,3 @@
-# Partitioning
 d-i partman-auto/disk string /dev/sda
 d-i partman-auto/method string lvm
 d-i partman-lvm/confirm boolean true
@@ -6,7 +5,7 @@ d-i partman-lvm/confirm_nooverwrite boolean true
 d-i partman-lvm/device_remove_lvm boolean true
 d-i partman-auto-lvm/new_vg_name string sysvg
 
-# Force UEFI booting (BIOS compatibility will be lost). Default: false.
+# Force UEFI booting ('BIOS compatibility' will be lost). Default: false.
 d-i partman-efi/non_efi_system boolean true
 
 # Ensure the partition table is GPT - this is required for EFI
@@ -111,7 +110,7 @@ d-i partman-auto/expert_recipe string \
     options/noexec{ noexec } \
     options/nosuid{ nosuid } \
     . \
-    4096 4096 4096 xfs \
+    100 100 -1 xfs \
     $lvmok{ } \
     mountpoint{ /var/log/audit } \
     lv_name{ lv_audit } \

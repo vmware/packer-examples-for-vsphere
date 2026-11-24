@@ -59,4 +59,3 @@
         type: mount
         path: /
         device: format-root
-

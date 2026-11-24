@@ -45,7 +45,12 @@ variable "vm_disk_lvm" {
   default     = []
 }
 
-variable "output_folder" {
+variable "template" {
   type        = string
-  description = "The output folder for the generated files."
+  description = "The template to render."
+}
+
+variable "output_file" {
+  type        = string
+  description = "The file to write the rendered template to."
 }

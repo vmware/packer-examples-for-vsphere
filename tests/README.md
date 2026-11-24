@@ -19,12 +19,21 @@ The tests are written in [Bats](https://bats-core.readthedocs.io/en/stable/).
 The `config/`, `download/`, `manifest/`, and `set-envvars/` directories test `config.sh`,
 `download.sh`, the build manifests, and `set-envvars.sh`. Run them from the project root, for example
 `bats tests/download/test`. The Zsh and Packer tests are skipped when those tools are missing.
+The `Tests` workflow (`.github/workflows/tests.yml`) runs every suite on pull requests and fails if any
+test is skipped.
+
+The `network/` and `storage/` directories render the `data/network.pkrtpl.hcl` and
+`data/storage.pkrtpl.hcl` template of every Linux build with Packer, and compare each one with the golden
+file for its installer (Autoinstall, Kickstart, Preseed, or Photon). A new distribution must be added to
+`installer()` in the `test` script. To update the golden files after an intended template change, run
+`UPDATE_GOLDEN=1 bats tests/network/test tests/storage/test`, then review the diff.
 
 ## Folder Structure
 
-- `templates/`: Template files
 - `golden/`: Golden files
 - `test`: Test script
+- `test.pkr.hcl`, `variables.pkr.hcl`: Packer configuration that renders a template
+- `test-*.pkrvars.hcl`: Variables for each test case
 
 ## Reference
 
