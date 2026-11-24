@@ -1,0 +1,189 @@
+#!/usr/bin/env bats
+
+setup() {
+  ROOT="$(cd "$BATS_TEST_DIRNAME/../.." >/dev/null 2>&1 && pwd)"
+  TMP="$(cd -P "$BATS_TEST_TMPDIR" && pwd)"
+  PROJECT="$TMP/project"
+  SCRIPT="$PROJECT/config.sh"
+  mkdir -p "$PROJECT/builds/linux/debian/13" "$PROJECT/builds/windows/server/2025" "$TMP/work"
+  cp "$ROOT/config.sh" "$SCRIPT"
+  printf 'vsphere\n' >"$PROJECT/builds/vsphere.pkrvars.hcl.example"
+  printf 'build\n' >"$PROJECT/builds/build.pkrvars.hcl.example"
+  printf 'debian 13\n' >"$PROJECT/builds/linux/debian/13/linux-debian.pkrvars.hcl.example"
+  printf 'windows 2025\n' >"$PROJECT/builds/windows/server/2025/windows-server.pkrvars.hcl.example"
+}
+
+# Fails unless the file has the expected contents.
+assert_contents() {
+  if [[ "$(cat "$1")" != "$2" ]]; then
+    printf 'Expected %s to contain %s, got:\n' "$1" "$2"
+    cat "$1"
+    return 1
+  fi
+}
+
+# Lists the files in a directory, one per line.
+list() {
+  (cd "$1" && find . -mindepth 1 -maxdepth 1 ! -name '.*' -print | sed 's|^\./||' | sort)
+}
+
+@test "config.sh creates config/ next to the script by default" {
+  cd "$TMP/work"
+  run bash "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Configuration setup complete: $PROJECT/config"* ]]
+  [ "$(list "$PROJECT/config")" = "$(printf '%s\n' build.pkrvars.hcl linux-debian-13.pkrvars.hcl \
+    vsphere.pkrvars.hcl windows-server-2025.pkrvars.hcl)" ]
+  [ ! -e "$TMP/work/config" ]
+}
+
+@test "config.sh names nested examples after their build directory" {
+  run bash "$SCRIPT"
+  [ "$status" -eq 0 ]
+  assert_contents "$PROJECT/config/linux-debian-13.pkrvars.hcl" 'debian 13'
+  assert_contents "$PROJECT/config/windows-server-2025.pkrvars.hcl" 'windows 2025'
+  assert_contents "$PROJECT/config/vsphere.pkrvars.hcl" 'vsphere'
+}
+
+@test "config.sh writes to a config_path relative to the working directory" {
+  cd "$TMP/work"
+  run bash "$SCRIPT" "us-west-1"
+  [ "$status" -eq 0 ]
+  [ -f "$TMP/work/us-west-1/vsphere.pkrvars.hcl" ]
+  [ ! -e "$PROJECT/config" ]
+}
+
+@test "config.sh accepts a config_path with spaces after --" {
+  run bash "$SCRIPT" -- "$TMP/my config"
+  [ "$status" -eq 0 ]
+  [ -f "$TMP/my config/linux-debian-13.pkrvars.hcl" ]
+}
+
+@test "config.sh leaves no example or staging files behind" {
+  run bash "$SCRIPT" "$TMP/out"
+  [ "$status" -eq 0 ]
+  [ -z "$(find "$TMP/out" -name '*.example' -o -name '.config.*')" ]
+}
+
+@test "config.sh backs up existing configuration files and keeps other files" {
+  mkdir -p "$TMP/out"
+  printf 'mine\n' >"$TMP/out/vsphere.pkrvars.hcl"
+  printf 'custom\n' >"$TMP/out/custom.pkrvars.hcl"
+  printf 'notes\n' >"$TMP/out/notes.txt"
+  run bash "$SCRIPT" "$TMP/out"
+  [ "$status" -eq 0 ]
+  backup=$(find "$TMP/out" -mindepth 1 -maxdepth 1 -type d -name 'backup.*')
+  [ -n "$backup" ]
+  [[ "$output" == *"Backup created: $backup"* ]]
+  assert_contents "$backup/vsphere.pkrvars.hcl" 'mine'
+  assert_contents "$backup/custom.pkrvars.hcl" 'custom'
+  [ ! -e "$TMP/out/custom.pkrvars.hcl" ]
+  assert_contents "$TMP/out/vsphere.pkrvars.hcl" 'vsphere'
+  assert_contents "$TMP/out/notes.txt" 'notes'
+}
+
+@test "config.sh does not take a backup when there are no configuration files" {
+  run bash "$SCRIPT" "$TMP/out"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"Backing up"* ]]
+  [ -z "$(find "$TMP/out" -name 'backup.*')" ]
+}
+
+@test "config.sh keeps an earlier backup taken in the same second" {
+  mkdir -p "$TMP/bin"
+  printf '#!/bin/sh\necho 20260101-000000\n' >"$TMP/bin/date"
+  chmod +x "$TMP/bin/date"
+  PATH="$TMP/bin:$PATH" bash "$SCRIPT" "$TMP/out"
+  printf 'first\n' >"$TMP/out/vsphere.pkrvars.hcl"
+  PATH="$TMP/bin:$PATH" bash "$SCRIPT" "$TMP/out"
+  printf 'second\n' >"$TMP/out/vsphere.pkrvars.hcl"
+  run env PATH="$TMP/bin:$PATH" bash "$SCRIPT" "$TMP/out"
+  [ "$status" -eq 0 ]
+  assert_contents "$TMP/out/backup.20260101-000000/vsphere.pkrvars.hcl" 'first'
+  assert_contents "$TMP/out/backup.20260101-000000.1/vsphere.pkrvars.hcl" 'second'
+}
+
+@test "config.sh leaves the configuration unchanged when a copy fails" {
+  [ "$(id -u)" -ne 0 ] || skip "root can read any file"
+  mkdir -p "$TMP/out"
+  printf 'mine\n' >"$TMP/out/vsphere.pkrvars.hcl"
+  chmod 000 "$PROJECT/builds/linux/debian/13/linux-debian.pkrvars.hcl.example"
+  run bash "$SCRIPT" "$TMP/out"
+  chmod 644 "$PROJECT/builds/linux/debian/13/linux-debian.pkrvars.hcl.example"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Error: Failed to copy"*"linux-debian.pkrvars.hcl.example"* ]]
+  [ "$(list "$TMP/out")" = "vsphere.pkrvars.hcl" ]
+  assert_contents "$TMP/out/vsphere.pkrvars.hcl" 'mine'
+  [ -z "$(find "$TMP/out" -name '.config.*')" ]
+}
+
+@test "config.sh stops when two examples map to the same file" {
+  printf 'other\n' >"$PROJECT/builds/linux/debian/13/other.pkrvars.hcl.example"
+  run bash "$SCRIPT" "$TMP/out"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"More than one example file maps to linux-debian-13.pkrvars.hcl"* ]]
+  [ -z "$(list "$TMP/out")" ]
+}
+
+@test "config.sh stops when there are no example files" {
+  find "$PROJECT/builds" -name '*.example' -delete
+  run bash "$SCRIPT" "$TMP/out"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"No example files found in: $PROJECT/builds"* ]]
+}
+
+@test "config.sh reports a config_path it cannot create" {
+  printf 'file\n' >"$TMP/blocker"
+  run bash "$SCRIPT" "$TMP/blocker/config"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Error: Failed to create directory: $TMP/blocker/config"* ]]
+}
+
+@test "config.sh --help prints usage without creating a directory" {
+  for flag in --help -h -H; do
+    run bash "$SCRIPT" "$flag"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Usage: config.sh [options] [config_path]"* ]]
+  done
+  [ ! -e "$PROJECT/config" ]
+}
+
+@test "config.sh rejects an invalid option without creating a directory" {
+  cd "$TMP/work"
+  run bash "$SCRIPT" --bogus
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Error: Invalid option: --bogus"* ]]
+  [[ "$output" == *"Usage:"* ]]
+  [ -z "$(list "$TMP/work")" ]
+  [ ! -e "$PROJECT/config" ]
+}
+
+@test "config.sh rejects more than one config_path" {
+  cd "$TMP/work"
+  run bash "$SCRIPT" one two
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Expected one config_path, got 2."* ]]
+  [ -z "$(list "$TMP/work")" ]
+}
+
+@test "config.sh finds the builds next to the script through a relative symbolic link" {
+  mkdir -p "$TMP/links/bin"
+  ln -s ../../project/config.sh "$TMP/links/bin/config"
+  cd "$TMP/work"
+  run "$TMP/links/bin/config"
+  [ "$status" -eq 0 ]
+  [ -f "$PROJECT/config/vsphere.pkrvars.hcl" ]
+}
+
+@test "config.sh creates the variables files that build.sh reads for every build" {
+  run bash "$ROOT/config.sh" "$TMP/out"
+  [ "$status" -eq 0 ]
+  while IFS= read -r example; do
+    dir=$(dirname "${example#"$ROOT"/builds/}")
+    [ -f "$TMP/out/$(printf '%s' "$dir" | tr '/' '-').pkrvars.hcl" ]
+  done < <(find "$ROOT/builds" -mindepth 2 -name '*.pkrvars.hcl.example')
+  for name in vsphere build ansible proxy common network linux-storage rhsm scc; do
+    [ -f "$TMP/out/$name.pkrvars.hcl" ]
+  done
+  [ "$(list "$TMP/out" | wc -l)" -eq "$(find "$ROOT/builds" -name '*.pkrvars.hcl.example' | wc -l)" ]
+}

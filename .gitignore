@@ -44,6 +44,8 @@ terraform.rc
 # Configurations
 ## Ignore default config directory.
 config/
+## Keep the config.sh tests.
+!tests/config/
 
 # Artifacts
 ## Ignore artifacts directory.
