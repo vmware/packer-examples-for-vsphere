@@ -57,7 +57,7 @@ Function Get-VMToolsService {
   return $false
 }
 
-Function Install-VMTools {
+Function Install-VMTool {
   param (
     [string]$SetupPath,
     [string]$Arguments
@@ -108,7 +108,7 @@ if ($vmToolsInstalled) {
 }
 
 # Install VMware Tools
-if (-not (Install-VMTools -SetupPath $SetupPath -Arguments '/s /v "/qb REBOOT=R"')) {
+if (-not (Install-VMTool -SetupPath $SetupPath -Arguments '/s /v "/qb REBOOT=R"')) {
   Write-Error "Failed to install $VMToolsName"
 } else {
   Write-Output "$VMToolsName installed successfully."

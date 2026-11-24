@@ -312,7 +312,7 @@
   [#960](https://github.com/vmware/packer-examples-for-vsphere/pull/960)
 - Updates `required_versions` for  `packer-plugin-ansible` to >= `1.1.1`.
   [#960](https://github.com/vmware/packer-examples-for-vsphere/pull/960)
-- Removes Centos Linux 7 from the project.
+- Removes CentOS Linux 7 from the project.
   [#960](https://github.com/vmware/packer-examples-for-vsphere/pull/960)
 - Updates Debian Linux 12.5 to 12.6 release.
   [#960](https://github.com/vmware/packer-examples-for-vsphere/pull/960)
@@ -1090,7 +1090,7 @@
 
 - Moves `vsphere.pkrvars.hcl` and `rhsm.pkrvars.hcl` to the `builds` directory.
 - Isolates variables to simplify updates to common settings with `builds/common.pkrvars.hcl`.
-- Refactors all build definitions to use variables and reduce any hard-coded settings.
+- Refactors all build definitions to use variables and reduce any hardcoded settings.
 - All machine image build definitions use the the recommended firmware based on the guest operating
   system and the minimum vSphere release supported by the repository. EFI Secure Boot is enabled for
   Red Hat Enterprise Linux 8, CentoOS Linux/Stream 8, AlmaLinux 8, and Microsoft Windows Server

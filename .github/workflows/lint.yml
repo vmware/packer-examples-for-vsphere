@@ -3,8 +3,13 @@ name: Lint
 
 on:
   push:
+    branches: [develop, main]
   pull_request:
   workflow_dispatch:
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -12,6 +17,7 @@ permissions:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v7.0.1
@@ -24,9 +30,13 @@ jobs:
           DEFAULT_BRANCH: develop
           LINTER_RULES_PATH: "."
           DISABLE_ERRORS: false
-          FILTER_REGEX_EXCLUDE: build.tmpl
+          FILTER_REGEX_EXCLUDE: '(^|/)build-ci\.tmpl$'
           IGNORE_GITIGNORED_FILES: true
-          VALIDATE_ALL_CODEBASE: false
+          VALIDATE_ALL_CODEBASE: true
+          MULTI_STATUS: false
+          ENABLE_GITHUB_PULL_REQUEST_SUMMARY_COMMENT: false
+          ENABLE_GITHUB_ACTIONS_STEP_SUMMARY: true
+          SAVE_SUPER_LINTER_SUMMARY: true
           VALIDATE_BASH: true
           VALIDATE_BASH_EXEC: true
           VALIDATE_DOCKERFILE_HADOLINT: true
