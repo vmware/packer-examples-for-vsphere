@@ -8,7 +8,11 @@
   vars:
     enable_cloudinit: false
     ansible_python_interpreter: auto
-    ansible_python_interpreter_fallback: ['python3.13', 'python3.12', 'python3.11', 'python3.10', 'python3.9', 'python3.8', '/usr/bin/python3', 'python3']
+    # python3.12 is installed on Enterprise Linux 8 for community.general only.
+    # Leaving it out of discovery keeps dnf and SELinux on platform Python.
+    ansible_python_interpreter_fallback: ['python3.13', 'python3.11', 'python3.10', 'python3.9', 'python3.8', '/usr/bin/python3', 'python3']
+    enterprise_linux_8: "{{ ansible_facts['os_family'] == 'RedHat' and (ansible_facts['distribution_major_version'] | default('0') | int) == 8 }}"
+    community_general_python_interpreter: "{{ '/usr/bin/python3.12' if (enterprise_linux_8 | bool) else ansible_facts['discovered_interpreter_python'] }}"
   roles:
     - base
     - users

@@ -6,6 +6,8 @@
   when: ansible_facts['distribution'] == 'RedHat'
   become: true
   ignore_errors: true
+  vars:
+    ansible_python_interpreter: "{{ community_general_python_interpreter }}"
 
 # Tasks to clean the Red Hat Subscription Manager data.
 - name: Cleaning the Red Hat Subscription Manager data.
@@ -90,6 +92,8 @@
   community.general.filesize:
     path: /etc/machine-id
     size: 0
+  vars:
+    ansible_python_interpreter: "{{ community_general_python_interpreter }}"
 
 - name: Cleaning the machine-id.
   when: (ansible_facts['distribution_major_version'] | int) <= 8

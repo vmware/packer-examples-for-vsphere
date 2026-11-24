@@ -38,6 +38,8 @@
     name: "{{ item }}"
     user: "{{ item }}"
     commands: ALL
+  vars:
+    ansible_python_interpreter: "{{ community_general_python_interpreter }}"
   loop:
     - "{{ build_username }}"
     - "{{ ansible_username }}"

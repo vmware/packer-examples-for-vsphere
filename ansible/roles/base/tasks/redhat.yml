@@ -16,6 +16,8 @@
         activationkey: "{{ rhsm_activation_key }}"
         org_id: "{{ rhsm_organization }}"
         force_register: true
+      vars:
+        ansible_python_interpreter: "{{ community_general_python_interpreter }}"
 
     - name: Enabling CodeReady Builder repository for RHEL 10.
       when: (ansible_facts['distribution_major_version'] | int) >= 10
@@ -28,6 +30,8 @@
       community.general.rhsm_repository:
         name: "codeready-builder-for-rhel-{{ ansible_facts['distribution_major_version'] }}-{{ ansible_facts['architecture'] }}-rpms"
         state: enabled
+      vars:
+        ansible_python_interpreter: "{{ community_general_python_interpreter }}"
 
     - name: Installing EPEL repository.
       ansible.builtin.dnf:

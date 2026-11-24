@@ -68,7 +68,8 @@ skipx
 
 ### Post-installation commands.
 %post
-dnf install -y sudo open-vm-tools perl
+# Platform Python is 3.6. Python 3.12 runs community.general; it stays off the default interpreter.
+dnf install -y sudo open-vm-tools perl python3.12
 echo "${build_username} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/${build_username}
 sed -i "s/^.*requiretty/#Defaults requiretty/" /etc/sudoers
 %end
