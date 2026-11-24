@@ -16,9 +16,12 @@ The tests are written in [Bats](https://bats-core.readthedocs.io/en/stable/).
   - `brew install bats-core` on macOS
 - Run `bats test` on each directory
 
-The `config/`, `download/`, `manifest/`, and `set-envvars/` directories test `config.sh`,
-`download.sh`, the build manifests, and `set-envvars.sh`. Run them from the project root, for example
+The `build/`, `config/`, `download/`, `manifest/`, and `set-envvars/` directories test `build.sh`,
+`config.sh`, `download.sh`, the build manifests, and `set-envvars.sh`. Run them from the project root, for example
 `bats tests/download/test`. The Zsh and Packer tests are skipped when those tools are missing.
+
+`tests/build/golden/commands.txt` records the Packer commands for every build in `project.json`.
+After an intended change, regenerate it with `UPDATE_GOLDEN=1 bats tests/build/test` and review the diff.
 
 ## Folder Structure
 

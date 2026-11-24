@@ -3,242 +3,155 @@
 # The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: BSD-2-Clause
 
-follow_link() {
-    file="$1"
-    while [ -L "$file" ]; do
-        file=$(readlink "$file")
+# Builds a virtual machine image for VMware vSphere with HashiCorp Packer.
+#
+# Usage:
+#
+#   ./build.sh [options] [config_path]
+#
+# - Each of --os, --dist, --version, and --edition skips its menu. The others are shown as menus.
+# - With --auto-continue, nothing is prompted and the script exits with the Packer exit status.
+# - config_path defaults to config/ next to this script. Create it with ./config.sh.
+
+set -euo pipefail
+
+# Prints the directory of this script, following symbolic links relative to their directory.
+script_dir() {
+    local file=$1 dir
+    while [[ -L "$file" ]]; do
+        dir=$(cd -P -- "$(dirname -- "$file")" && pwd)
+        file=$(readlink -- "$file")
+        [[ "$file" == /* ]] || file="$dir/$file"
     done
-    echo "$file"
+    cd -P -- "$(dirname -- "$file")" && pwd
 }
 
-# Get the script path.
-#script_path=$(realpath "$(dirname "$(follow_link "$0")")")
-script_path=$(
-    cd "$(dirname "$(follow_link "$0")")" || exit
-    pwd
-)
-
-run_check_dependencies=false
-run_show_help=false
-
-# This function prompts the user to press Enter to continue.
-press_enter_continue() {
-    printf "Press \033[32mEnter\033[0m to continue.\n"
-    read -r
-    exec "$0"
+# Prints a path as an absolute path, relative to the working directory, without a trailing slash.
+absolute_path() {
+    local path=$1
+    [[ "$path" == /* ]] || path="$PWD/$path"
+    [[ "$path" == / ]] || path=${path%/}
+    printf '%s' "$path"
 }
 
-# This function prompts the user to press Enter to exit.
-press_enter_exit() {
-    printf "Press \033[31mEnter\033[0m to exit.\n"
-    read -r
-    exit 0
+# Prints the arguments in lower case.
+lower() {
+    printf '%s' "$*" | tr '[:upper:]' '[:lower:]'
 }
 
-# This function prompts the user to press Enter to continue.
-press_enter() {
-    cd "$script_path" || exit
-    printf "Press \033[32mEnter\033[0m to continue.\n"
-    read -r
-    exec $0
-}
+script_path=$(script_dir "$0")
+json_path="$script_path/project.json"
+config_path="$script_path/config"
 
-# Set config_path if it's not already set
-if [ -z "$config_path" ]; then
-    config_path=$(
-        cd "${script_path}/config" || exit
-        pwd
-    )
-fi
-
-# This function displays the information about the script and project.
-info() {
-    project_name=$(get_project_info "name")
-    project_description=$(get_project_info "description")
-    project_version=$(get_project_info "version")
-    project_license=$(get_project_info "license[0].name")
-    project_github_url=$(get_project_info "urls.github")
-    project_docs_url=$(get_project_info "urls.documentation")
-    clear
-    printf "\033[32m%s\033[0m: \033[34m%s\033[0m\n\n" "$project_name" "$project_version"
-    printf "Copyright 2023-%s Broadcom. All Rights Reserved.\n\n" "$(date +%Y)"
-    printf "License: %s\n\n" "$project_license"
-    printf "%s\n\n" "$project_description"
-    printf "GitHub Repository: %s\n" "$project_github_url"
-    printf "Documentation: %s\n\n" "$project_docs_url"
-    show_help "continue"
-    press_enter_continue
-}
-
-# This function displays the help message.
-show_help() {
-    local exit_after=${1:-"exit"}
-    script_name=$(basename "$0")
-
-    printf "\033[0;32m Usage\033[0m: %s [options] [config_path]\n\n" "$script_name"
-    printf "\033[0;34m Options:\033[0m\n"
-    printf "  \033[0;34m --help, -h, -H\033[0m       Display this help message.\n\n"
-    printf "  \033[0;34m --deps, -d, -D\033[0m       Check the dependencies.\n"
-    printf "  \033[0;34m --debug, -b, -B\033[0m      Enable debug mode.\n"
-    printf "  \033[0;34m --json, -j, -J\033[0m       Specify the JSON file path.\n"
-    printf "  \033[0;34m --os\033[0m                 Specify the operating system (Linux, Windows).\n"
-    printf "  \033[0;34m --dist\033[0m               Specify the distribution (e.g., 'Ubuntu', 'Windows Server').\n"
-    printf "  \033[0;34m --version\033[0m            Specify the version of the distribution.\n"
-    printf "  \033[0;34m --edition\033[0m            Specify the edition (e.g., 'Standard', 'Datacenter').\n"
-    printf "  \033[0;34m --auto-continue\033[0m      Automatically continue without user prompts.\n"
-    printf "  \033[0;34m --show, -s, -S\033[0m       Display the build command used to build the image.\n"
-    printf "\033[0;34m config_path:\033[0m\n"
-    printf "  \033[0m Path to save the generated configuration files. (Optional).\n\n"
-
-
-    # Handle user input or exit.
-    if [[ -z "$input" ]]; then
-        [ "$exit_after" = "exit" ] && exit 0
-    else
-        press_enter_continue
-    fi
-}
-
-json_path="project.json"
-
-# Check for jq
-check_jq() {
-    cmd="jq"
-    if ! command -v $cmd &>/dev/null; then
-        echo -e "\033[0;31m[✘]\033[0m $cmd is not installed."
-        exit 1
-    fi
-}
-
-check_ansible() {
-    cmd="ansible"
-    local deps_version
-    deps_version=$(jq -r --arg cmd $cmd '.dependencies[] | select(.name == $cmd ) | .version_requirement' $json_path)
-    required_version=$(echo "$deps_version" | tr -d '>=' | xargs)
-    if ! command -v $cmd &>/dev/null; then
-        echo -e "\033[0;31m[✘]\033[0m $cmd is not installed. $required_version or later is required."
-        exit 1
-    else
-        installed_version=$($cmd --version | head -n 1 | awk '{print $3}' | tr -d '[]')
-        if [ "$(printf '%s\n' "$required_version" "$installed_version" | sort -V | head -n1)" != "$required_version" ]; then
-            echo -e "\033[0;31m[✘]\033[0m $cmd-core $installed_version installed. $required_version or later is required."
-            exit 1
-        fi
-    fi
-}
-
-check_packer() {
-    cmd="packer"
-    local deps_version
-    deps_version=$(jq -r --arg cmd $cmd '.dependencies[] | select(.name == $cmd ) | .version_requirement' $json_path)
-    required_version=$(echo "$deps_version" | tr -d '>=' | xargs)
-    if ! command -v $cmd &>/dev/null; then
-        echo -e "\033[0;31m[✘]\033[0m $cmd is not installed. $required_version or later is required."
-        exit 1
-    else
-        installed_version=$($cmd version | head -n 1 | awk '{print $2}' | tr -d 'v')
-        if [ "$(printf '%s\n' "$required_version" "$installed_version" | sort -V | head -n1)" != "$required_version" ]; then
-            echo -e "\033[0;31m[✘]\033[0m $cmd $installed_version installed. $required_version or later is required."
-            exit 1
-        fi
-    fi
-}
-
-# Check if jq is installed.
-check_jq
-
-# Check if ansible is installed.
-check_ansible
-
-# Check if packer is installed.
-check_packer
-
-check_command() {
-    cmd=$1
-    capitalized_cmd=$(echo "$cmd" | awk '{print toupper(substr($0,1,1))substr($0,2)}')
-    version_requirement=$(jq -r --arg cmd "$cmd" '.dependencies[] | select(.name == $cmd) | .version_requirement' "$json_path")
-    operator=$(echo "$version_requirement" | cut -d " " -f 1)
-    required_version=$(echo "$version_requirement" | cut -d " " -f 2)
-
-    RED='\033[0;31m'
-    GREEN='\033[0;32m'
-    NC='\033[0m' # No Color
-
-    CHECKMARK="${GREEN}[✔]${NC}"
-    CROSSMARK="${RED}[✘]${NC}"
-
-    if command -v "$cmd" &>/dev/null; then
-        installed_version=$($cmd --version | head -n 1 | awk '{print $NF}' | sed 's/[^0-9.]*//g')
-        case $operator in
-        ">=")
-            if echo -e "$required_version\n$installed_version" | sort -V -C; then
-                echo -e "$CHECKMARK $capitalized_cmd: $installed_version is installed. $required_version or later is required."
-            else
-                echo -e "$CROSSMARK $capitalized_cmd: $installed_version is installed. $required_version or later is required."
-            fi
-            ;;
-        "==")
-            if [ "$installed_version" == "$required_version" ]; then
-                echo -e "$CHECKMARK $capitalized_cmd: $installed_version is installed. $required_version or later is required."
-            else
-                echo -e "$CROSSMARK $capitalized_cmd: $installed_version is installed. $required_version or later is required."
-            fi
-            ;;
-        *)
-            echo -e "$CROSSMARK Unknown operator: $operator"
-            ;;
-        esac
-    else
-        echo -e "$CROSSMARK $capitalized_cmd is not installed. $required_version or later required."
-    fi
-}
-
-# This function checks if the required dependencies are installed.
-check_dependencies() {
-    for cmd in packer ansible terraform git gomplate; do
-        check_command $cmd
-    done
-    printf "\nPress \033[32mEnter\033[0m to continue."
-    read -r input
-    if [[ -z "$input" ]]; then
-        return
-    else
-        printf "\nPress \033[32mEnter\033[0m to continue."
-    fi
-}
-
-show_command=0
 os=""
 dist=""
 version=""
 edition=""
 auto_continue=false
+debug=false
+show_command=false
+run_check_dependencies=false
+logging_enabled=false
+log_file=""
+build_status=0
 
-# Script options.
-while (("$#")); do
+# Writes a message to the log file when logging is enabled.
+log_message() {
+    [[ "$logging_enabled" == true ]] || return 0
+    printf '%s [%s]: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$(printf '%s' "$1" | tr '[:lower:]' '[:upper:]')" "$2" >>"$log_file"
+}
+
+# Prints an error message.
+error() {
+    printf '\033[0;31m✘ Error:\033[0m %s\n' "$1" >&2
+    log_message error "$1"
+}
+
+# Prints an error message and exits, with status 1 unless another is given.
+fail() {
+    error "$1"
+    exit "${2:-1}"
+}
+
+# Prints a warning message.
+warn() {
+    printf '\033[0;33m%s\033[0m %s\n' "$1" "$2"
+    log_message warn "$1 $2"
+}
+
+show_help() {
+    printf 'Usage: %s [options] [config_path]\n\n' "$(basename -- "$0")"
+    printf 'Options:\n'
+    printf '  --help, -h, -H       Display the help message.\n'
+    printf '  --deps, -d, -D       Check the required dependencies.\n'
+    printf '  --json, -j, -J       Specify the project file.\n'
+    printf '                       Defaults to project.json next to this script.\n'
+    printf '  --os                 Specify the guest operating system (e.g., Linux, Windows).\n'
+    printf '  --dist               Specify the distribution (e.g., Ubuntu Server, Windows Server).\n'
+    printf '  --version            Specify the version (e.g., 24.04, 2025).\n'
+    printf '  --edition            Specify the edition for Windows (e.g., Standard, Datacenter).\n'
+    printf '  --auto-continue      Build without prompts.\n'
+    printf '                       Requires --os, --dist, --version, and --edition for Windows.\n'
+    printf '  --show, -s, -S       Display the Packer command for the build.\n'
+    printf '  --debug, -b, -B      Run Packer in debug mode.\n\n'
+    printf 'config_path:\n'
+    printf '  Specify the configuration directory.\n'
+    printf '  Defaults to config/ next to this script.\n'
+}
+
+# Prints an error and the help, and exits with status 2.
+usage_error() {
+    error "$1"
+    printf '\n' >&2
+    show_help >&2
+    exit 2
+}
+
+# Fails unless the option has a value.
+require_value() {
+    if [[ $# -lt 2 || -z "$2" ]]; then
+        usage_error "$1 requires a value."
+    fi
+}
+
+positional=()
+while (($#)); do
     case "$1" in
-    --json | -j | -J)
-        json_path="$2"
-        shift 2
+    --help | -h | -H)
+        show_help
+        exit 0
         ;;
     --deps | -d | -D)
-        check_dependencies
+        run_check_dependencies=true
         shift
         ;;
+    --debug | -b | -B)
+        debug=true
+        shift
+        ;;
+    --json | -j | -J)
+        require_value "$@"
+        json_path=$(absolute_path "$2")
+        shift 2
+        ;;
     --os)
-        os="$2"
+        require_value "$@"
+        os=$2
         shift 2
         ;;
     --dist)
-        dist="$2"
-        shift 2
-        ;;
-    --edition)
-        edition="$2"
+        require_value "$@"
+        dist=$2
         shift 2
         ;;
     --version)
-        version="$2"
+        require_value "$@"
+        version=$2
+        shift 2
+        ;;
+    --edition)
+        require_value "$@"
+        edition=$2
         shift 2
         ;;
     --auto-continue)
@@ -246,771 +159,586 @@ while (("$#")); do
         shift
         ;;
     --show | -s | -S)
-        show_command=1
+        show_command=true
         shift
         ;;
-    --debug | -b | -B)
-        debug_option="-debug"
+    --)
         shift
+        positional+=("$@")
+        break
         ;;
-    --help | -h | -H)
-        run_show_help=true
-        show_help
-        shift
+    -?*)
+        usage_error "Invalid option: $1"
         ;;
     *)
-        config_path=$(realpath "$1")
+        positional+=("$1")
         shift
         ;;
     esac
 done
 
-# After the loop, check if show_help needs to be run
-if $run_show_help; then
-    show_help
+if ((${#positional[@]} > 1)); then
+    usage_error "Expected one config_path, got ${#positional[@]}."
+elif ((${#positional[@]} == 1)); then
+    config_path=$(absolute_path "${positional[0]}")
 fi
 
-if $run_check_dependencies; then
-    check_dependencies
+if ! command -v jq >/dev/null 2>&1; then
+    fail "jq is not installed."
 fi
 
-# Set the default values for the variables.
-os_names=$(jq -r '.os[] | .name' "$json_path")
-IFS=$'\n' read -rd '' -a os_array <<<"$os_names"
+if [[ ! -f "$json_path" ]]; then
+    fail "Project file not found: $json_path"
+fi
 
-# Get the project information from the JSON file.
-get_project_info() {
-    local field=$1
-    jq -r ".project.${field}" "$json_path"
-}
+if ! jq -e . "$json_path" >/dev/null 2>&1; then
+    fail "Project file is not valid JSON: $json_path"
+fi
 
-# Get the build information from the JSON file.
-get_build_info() {
-    local field=$1
-    jq -r ".build.${field}" "$json_path"
-}
-
-# Get the settings from the JSON file.
-get_settings() {
-    local field=$1
-    jq -r ".settings.${field}" "$json_path"
-}
-
-validate_windows_username() {
-    build_username=$(grep 'build_username' "$1" | awk -F '"' '{print $2}')
-    if [[ ! ${build_username} =~ ^[a-z_]([a-z0-9_-]{0,31}|[a-z0-9_-]{0,30}'\$')$ ]]; then
-        echo -e "\n\033[31mBuild username \033[33m$build_username\033[31m is invalid for Linux OS. Please check the build.pkrvars.hcl file."
-        echo -e "\nUsername validation rules:"
-        echo -e "\n1. It should start (^) with only a lowercase letter or an underscore ([a-z_]). This occupies exactly 1 character."
-        echo -e "\n2. Then it should be one of either (( ... )):"
-        echo -e "\n   a. From 0 to 31 characters ({0,31}) of letters, numbers, underscores, and/or hyphens ([a-z0-9_-]),"
-        echo -e "\n   OR (|)"
-        echo -e "\n   b. From 0 to 30 characters of the above plus a US dollar sign symbol (\$) at the end,"
-        echo -e "\n3. No more characters past this pattern ($).\033[0m"
-        exit 1
+# Set up logging before anything else is reported. A relative logging path is relative to the
+# working directory.
+if [[ "$(jq -r '.settings.build_logging_enabled // false' "$json_path")" == true ]]; then
+    logging_path=$(jq -r '.settings.build_logging_path // ""' "$json_path")
+    logging_path=$(absolute_path "${logging_path:-.}")
+    log_file="$logging_path/$(jq -r '.settings.build_logging_filename // "build.log"' "$json_path")"
+    if mkdir -p -- "$logging_path" && touch -- "$log_file"; then
+        logging_enabled=true
+        log_message info "Log file: $log_file."
+    else
+        warn "Warning:" "Logging is disabled. The log file cannot be written: $log_file"
     fi
+fi
+
+# Prints the version requirement for a dependency in the project file, such as ">= 1.16.2".
+version_requirement() {
+    jq -r --arg name "$1" '.dependencies[] | select(.name == $name) | .version_requirement' "$json_path"
 }
 
-validate_linux_username() {
-    build_username=$(grep 'build_username' "$1" | awk -F '"' '{print $2}')
-    if [[ ! ${build_username} =~ ^[a-z_]([a-z0-9_-]{0,31}|[a-z0-9_-]{0,30}'\$')$ ]]; then
-        echo -e "\n\033[31mBuild username \033[33m$build_username\033[31m is invalid for Linux OS. Please check the build.pkrvars.hcl file."
-        echo -e "\nUsername validation rules:"
-        echo -e "\n1. It should start (^) with only a lowercase letter or an underscore ([a-z_]). This occupies exactly 1 character."
-        echo -e "\n2. Then it should be one of either (( ... )):"
-        echo -e "\n   a. From 0 to 31 characters ({0,31}) of letters, numbers, underscores, and/or hyphens ([a-z0-9_-]),"
-        echo -e "\n   OR (|)"
-        echo -e "\n   b. From 0 to 30 characters of the above plus a US dollar sign symbol (\$) at the end,"
-        echo -e "\n3. No more characters past this pattern ($).\033[0m"
-        exit 1
-    fi
+# Prints the first version number in the output of the command's --version option.
+installed_version() {
+    { "$1" --version 2>/dev/null || true; } | sed -nE '1s/[^0-9]*([0-9]+(\.[0-9]+)+).*/\1/p'
 }
 
-# Get the settings from the JSON file.
-logging_enabled=$(get_settings build_logging_enabled)
-logging_path=$(get_settings build_logging_path)
-logfile_filename=$(get_settings build_logging_filename)
-
-# This function prompts the user to go back or quit.
-prompt_user() {
-    if [ "$auto_continue" = true ]; then
-        return
-    fi
-    printf "Enter \033[32mb\033[0m to go back, or \033[31mq\033[0m to quit.\n\n"
-}
-
-# This function prints a message to the console based on the message type.
-print_message() {
-    local type=$1
-    local message=$2
-
-    case $type in
-    error)
-        printf "\033[31m%s\033[0m$message"
-        ;;
-    info)
-        printf "\033[37m%s\033[0m$message"
-        ;;
-    warn)
-        printf "\033[33m%s\033[0m$message"
-        ;;
-    debug)
-        printf "\033[34m%s\033[0m$message"
-        ;;
-    *)
-        printf "%s" "$message"
-        ;;
+# Succeeds when the installed version meets the requirement, such as ">= 1.16.2" or "== 1.16.2".
+meets_requirement() {
+    local installed=$1 operator=$2 required=$3
+    case "$operator" in
+    ">=") [[ "$(printf '%s\n%s\n' "$required" "$installed" | sort -V | sed -n 1p)" == "$required" ]] ;;
+    "==") [[ "$installed" == "$required" ]] ;;
+    *) return 1 ;;
     esac
-
-    if $logging_enabled; then
-        # Remove color formatting from the log message
-        local no_color_message
-        no_color_message=$(echo -e "$message" | sed -r "s/\x1b\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g")
-        log_message "$type" "$no_color_message"
-    fi
 }
 
-log_message() {
-    local type=$1
-    local message=$2
-    if $logging_enabled; then
-        printf "$(date '+%Y-%m-%d %H:%M:%S') [%s]: %s\n" "$(echo "$type" | tr '[:lower:]' '[:upper:]')" "$message" >>"$log_file"
+# Prints the result of a dependency check, and fails when the dependency is missing or too old.
+check_command() {
+    local cmd=$1 name operator required installed
+    name="$(printf '%s' "${cmd:0:1}" | tr '[:lower:]' '[:upper:]')${cmd:1}"
+    read -r operator required <<<"$(version_requirement "$cmd")" || true
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        printf '\033[0;31m[✘]\033[0m %s is not installed. %s or later is required.\n' "$name" "$required"
+        return 1
+    fi
+    installed=$(installed_version "$cmd")
+    if [[ -n "$operator" ]] && ! meets_requirement "$installed" "$operator" "$required"; then
+        printf '\033[0;31m[✘]\033[0m %s: %s is installed. %s or later is required.\n' "$name" "$installed" "$required"
+        return 1
+    fi
+    printf '\033[0;32m[✔]\033[0m %s: %s is installed. %s or later is required.\n' "$name" "$installed" "$required"
+}
+
+if [[ "$run_check_dependencies" == true ]]; then
+    for cmd in packer ansible terraform git gomplate; do
+        check_command "$cmd" || true
+    done
+    printf '\n'
+    if [[ "$auto_continue" != true ]]; then
+        printf 'Press \033[32mEnter\033[0m to continue.\n'
+        read -r || exit 1
+    fi
+fi
+
+# Ansible and Packer are required for every build.
+for cmd in ansible packer; do
+    if ! output=$(check_command "$cmd"); then
+        printf '%s\n' "$output" >&2
+        exit 1
+    fi
+done
+
+if [[ ! -d "$config_path" ]]; then
+    fail "Configuration directory not found: $config_path. Run ./config.sh to create it."
+fi
+
+project_name=$(jq -r '.project.name // ""' "$json_path")
+project_version=$(jq -r '.project.version // ""' "$json_path")
+
+# The branch name, or the commit when the HEAD is detached.
+branch_name=$(git -C "$script_path" symbolic-ref --short -q HEAD 2>/dev/null) ||
+    branch_name=$(git -C "$script_path" rev-parse --short HEAD 2>/dev/null) ||
+    branch_name=""
+
+# Packer builds use path.cwd for manifests, artifacts, and Ansible, so they run from the project root.
+cd "$script_path"
+
+clear_screen() {
+    if [[ -t 1 ]]; then
+        clear
     fi
 }
 
 print_title() {
-    project_name=$(jq -r '.project.name' "$json_path")
-    project_version=$(jq -r '.project.version' "$json_path")
-    line_width=80
-    title="${project_name} ${project_version}"
-    subtitle="B U I L D"
-    padding_title=$(((line_width - ${#title}) / 2))
-    padding_subtitle=$(((line_width - ${#subtitle}) / 2))
-
-    # Check if the current directory is a git repository
-    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-        # Get the current branch name
-        branch_name=$(git rev-parse --abbrev-ref HEAD)
-        title="${title} (Branch: ${branch_name})"
-        padding_title=$(((line_width - ${#title}) / 2))
-
-        # Check if the branch name contains a /
-        if [[ "$branch_name" == *"/"* ]]; then
-            branch_contains_slash=true
-        else
-            branch_contains_slash=false
-        fi
+    local title="$project_name $project_version" subtitle="B U I L D" line_width=80 padding
+    if [[ -n "$branch_name" ]]; then
+        title="$title (Branch: $branch_name)"
     fi
-
-    printf "\033[34m%*s%s\033[0m\n" $padding_title '' "$title"
-    printf "\033[32m%*s%s\033[0m\n" $padding_subtitle '' "$subtitle"
+    padding=$(((line_width - ${#title}) / 2))
+    ((padding > 0)) || padding=0
+    printf '\033[34m%*s%s\033[0m\n' "$padding" '' "$title"
+    padding=$(((line_width - ${#subtitle}) / 2))
+    printf '\033[32m%*s%s\033[0m\n' "$padding" '' "$subtitle"
 }
 
-# This function returns success if the first argument exactly matches any of the
-# remaining arguments.
-array_contains() {
-    local match="$1" element
-    shift
-    for element in "$@"; do
-        [[ "$element" == "$match" ]] && return 0
-    done
-    return 1
+# Displays the information about the project.
+show_info() {
+    clear_screen
+    printf '\033[32m%s\033[0m: \033[34m%s\033[0m\n\n' "$project_name" "$project_version"
+    printf 'Copyright 2023-%s Broadcom. All Rights Reserved.\n\n' "$(date +%Y)"
+    printf 'License: %s\n\n' "$(jq -r '.project.license[0].name // ""' "$json_path")"
+    printf '%s\n\n' "$(jq -r '.project.description // ""' "$json_path")"
+    printf 'GitHub Repository: %s\n' "$(jq -r '.project.urls.github // ""' "$json_path")"
+    printf 'Documentation: %s\n\n' "$(jq -r '.project.urls.documentation // ""' "$json_path")"
+    show_help
+    printf 'Press \033[32mEnter\033[0m to continue.\n'
+    read -r || exit 1
 }
 
-# This function selects the guest operating system family.
-# Only `Linux` and `Windows` are supported presently in the JSON file.
-select_os() {
-    if [[ -n "$os" ]]; then
-        # Check if the OS is supported.
-        if ! array_contains "$os" "${os_array[@]}"; then
-            printf "\033[0;31m✘ Error:\033[0m Unsupported OS: \033[0;33m%s\033[0m.\n" "$os"
-            printf "\033[0;34mℹ  Supported OS options are:\033[0m\n"
-            for os_item in "${os_array[@]}"; do
-                printf "\033[0;34m- %s\033[0m\n" "$os_item"
-            done
-            exit 1
+# The jq filter for the selected distribution or Windows type.
+# shellcheck disable=SC2016 # $os and $dist are jq variables.
+dist_filter='.os[] | select(.name == $os) | (.distributions // .types // [])[] | select(.description == $dist)'
+
+list_os() {
+    jq -r '.os[].name' "$json_path"
+}
+
+list_dists() {
+    jq -r --arg os "$os" '.os[] | select(.name == $os) | (.distributions // .types // [])[] | .description' "$json_path" | sort
+}
+
+list_versions() {
+    jq -r --arg os "$os" --arg dist "$dist" \
+        "$dist_filter"' | .versions | to_entries[] | select(any(.value[]; .enabled == "true")) | .key' "$json_path" | sort -V -r
+}
+
+list_editions() {
+    jq -r --arg os "$os" --arg dist "$dist" --arg version "$version" \
+        "$dist_filter"' | .versions[$version] // [] | .[] | .editions[]? | select(.enabled == "true") | .edition' "$json_path" | sort -r
+}
+
+# Prints the build directory name for the selection, then each variables file from build_files.
+list_build_files() {
+    jq -r --arg os "$os" --arg dist "$dist" --arg version "$version" --arg edition "$edition" \
+        "[$dist_filter"' | .versions[$version] // [] | .[] | select(.enabled == "true") | . as $v
+        | if $edition == "" then $v else ($v.editions[]? | select(.edition == $edition and .enabled == "true")) end
+        | [$v.version] + [.build_files[0] // {} | .[]]] | first // [] | .[]' "$json_path"
+}
+
+# Loads the output lines of a command into the items array.
+items=()
+load_items() {
+    local line
+    items=()
+    while IFS= read -r line; do
+        if [[ -n "$line" ]]; then
+            items+=("$line")
         fi
-        echo -e "\033[0;32m✔ Selected OS:\033[0m $os"
-        select_distribution
-        return
-    fi
-
-    clear
-    print_title
-    printf "\nSelect a guest operating system:\n\n"
-    for i in "${!os_array[@]}"; do
-        printf "%s: %s\n" "$((i + 1))" "${os_array[$i]}"
-    done
-    printf "\nEnter \033[31mq\033[0m to quit or \033[34mi\033[0m for info.\n\n"
-
-    while true; do
-        read -r -p "Select a guest operating system: " os_input
-        if [[ $os_input == [qQ] ]]; then
-            exit 0
-        elif [[ $os_input == [iI] ]]; then
-            info
-        elif ((os_input >= 1 && os_input <= ${#os_array[@]})); then
-            os=${os_array[$((os_input - 1))]}
-            select_distribution
-            break
-        else
-            printf "\n"
-            print_message warn "\033[33mInvalid Selection:\033[0m Enter a number between 1 and ${#os_array[@]}."
-            printf "\n\n"
-        fi
-    done
+    done < <("$@")
 }
 
-
-select_distribution() {
-    case "$os" in
-    "Linux")
-        dist_descriptions=$(jq -r --arg os "$os" '.os[] | select(.name == $os) | .distributions[] | .description' "$json_path")
-        ;;
-    "Windows")
-        dist_descriptions=$(jq -r --arg os "$os" '.os[] | select(.name == $os) | .types[] | .description' "$json_path")
-        ;;
-    *)
-        print_message error "Unsupported guest operating system. Exiting..."
-        ;;
+# Prints the name of a selection option for messages.
+option_noun() {
+    case "$1" in
+    --os) printf 'OS' ;;
+    --dist) printf 'distribution' ;;
+    *) printf '%s' "${1#--}" ;;
     esac
-
-    # Check if the distribution descriptions are empty.
-    if [ -z "$dist_descriptions" ]; then
-        printf "\nNo distributions found for %s.\n" "$os"
-        select_os
-        return
-    fi
-
-    # Convert the distribution descriptions to a sorted array.
-    IFS=$'\n' read -rd '' -a dist_array <<<"$(echo "$dist_descriptions" | sort)"
-
-    if [[ -n "$dist" ]]; then
-        # Check if the distribution is supported.
-        if ! array_contains "$dist" "${dist_array[@]}"; then
-            printf "\033[0;31m✘ Error:\033[0m Unsupported distribution: \033[0;33m%s\033[0m.\n" "$dist"
-            printf "\033[0;34mℹ Supported distributions for \033[0;36m%s\033[0;34m are:\033[0m\n" "$os"
-            for dist_item in "${dist_array[@]}"; do
-                printf "\033[0;34m- %s\033[0m\n" "$dist_item"
-            done
-            exit 1
-        fi
-        echo -e "\033[0;32m✔ Selected distribution:\033[0m $dist"
-        select_version
-        return
-    fi
-
-    print_title
-
-    # Print the submenu.
-    clear
-    print_title
-    printf "\nSelect a %s:\n\n" "$([[ "$os" == "Windows" ]] && echo "$os type" || echo "$os distribution")"
-    for i in "${!dist_array[@]}"; do
-        printf "%d: %s\n" "$((i + 1))" "${dist_array[$i]}"
-    done
-    printf "\n"
-    prompt_user
-
-    while true; do
-        read -r -p "Enter a number of the $([[ "$os" == "Windows" ]] && echo "$os type" || echo "$os distribution"): " dist_input
-        if [[ $dist_input == [qQ] ]]; then
-            exit 0
-        elif [[ $dist_input == [bB] ]]; then
-            select_os
-            break
-        elif ((dist_input >= 1 && dist_input <= ${#dist_array[@]})); then
-            dist=${dist_array[$((dist_input - 1))]}
-            select_version
-            break
-        else
-            printf "\n"
-            print_message warn "\033[33mInvalid Selection:\033[0m Enter a number between 1 and ${#dist_array[@]}."
-            printf "\n\n"
-        fi
-    done
 }
 
-# This function selects the version based on the guest operating system's distribution or type.
-select_version() {
+# Selects one of the items into $selection. The preset value is used when it is given, and the
+# menu is shown otherwise. Returns 1 when the user goes back.
+#
+# Arguments: the option name, the preset value, the menu heading, the prompt, the prefix for each
+# item, and whether the menu offers back (b) or info (i).
+selection=""
+select_item() {
+    local option=$1 preset=$2 heading=$3 prompt=$4 prefix=$5 extra=$6 noun input i
+    local show_menu=true
+    noun=$(option_noun "$option")
 
-    if [[ "$dist" == *"Windows"* ]]; then
-        # Parse the JSON file to get the versions for the selected distribution Windows
-        version_descriptions=$(jq -r --arg os "$os" --arg dist "$dist" '.os[] | select(.name == $os) | .types[] | select(.description == $dist) | .versions | to_entries[] | select(.value[] | .enabled == "true") | .key' "$json_path")
-    else
-        version_descriptions=$(jq -r --arg os "$os" --arg dist "$dist" '.os[] | select(.name == $os) | .distributions[] | select(.description == $dist) | .versions | to_entries[] | select(.value[] | .enabled == "true") | .key' "$json_path")
+    if ((${#items[@]} == 0)); then
+        fail "No $noun options found in $json_path."
     fi
 
-    # Convert the version descriptions to an array and sort it in descending order.
-    IFS=$'\n' read -rd '' -a version_array <<<"$(echo "$version_descriptions" | sort -V -r)"
-    if [[ -n "$version" ]]; then
-        # Check if the version is supported.
-        if ! array_contains "$version" "${version_array[@]}"; then
-            printf "\033[0;31m✘ Error:\033[0m Unsupported version: \033[0;33m%s\033[0m.\n" "$version"
-            printf "\033[0;34mℹ Supported versions for \033[0;36m%s\033[0;34m are:\033[0m\n" "$dist"
-            for version_item in "${version_array[@]}"; do
-                printf "\033[0;34m- %s\033[0m\n" "$version_item"
-            done
-            exit 1
-        fi
-        echo -e "\033[0;32m✔ Selected version:\033[0m $version"
-        if [[ "$dist" == *"Windows"* ]]; then
-            select_edition
-        else
-            select_build
-        fi
-        return
-    fi
-
-    # Print the submenu.
-    clear
-    print_title
-    printf "\nSelect a version:\n\n"
-    for i in "${!version_array[@]}"; do
-        printf "%s: %s %s\n" "$((i + 1))" "$dist" "${version_array[$i]}"
-    done
-    printf "\n"
-    prompt_user
-
-    while true; do
-        read -r -p "Select a version: " version_input
-        if [[ "$version_input" == [qQ] ]]; then
-            exit 0
-        elif [[ $version_input == [bB] ]]; then
-            select_distribution
-            break
-        elif [[ $version_input =~ ^[0-9]+$ ]] && ((version_input >= 1 && version_input <= ${#version_array[@]})); then
-            version=${version_array[$((version_input - 1))]}
-            if [[ "$dist" == *"Windows"* ]]; then
-                select_edition
-            else
-                select_build
+    if [[ -n "$preset" ]]; then
+        for i in "${items[@]}"; do
+            if [[ "$i" == "$preset" ]]; then
+                selection=$preset
+                printf '\033[0;32m✔ Selected %s:\033[0m %s\n' "$noun" "$selection"
+                return 0
             fi
-            break
-        else
-            printf "\n"
-            print_message warn "\033[33mInvalid Selection:\033[0m Enter a number between 1 and ${#version_array[@]}.\n"
-            printf "\n"
-        fi
-    done
-}
-
-select_edition() {
-    edition_descriptions=$(jq -r --arg os "$os" --arg dist "$dist" --arg version "$version" '.os[] | select(.name == $os) | .types[] | select(.description == $dist) | .versions[$version][] | .editions[] | select(.enabled == "true") | .edition' "$json_path")
-    IFS=$'\n' read -rd '' -a edition_array <<<"$(echo "$edition_descriptions" | sort -r)"
-
-    if [[ -n "$edition" ]]; then
-        # Check if the edition is supported.
-        if ! array_contains "$edition" "${edition_array[@]}"; then
-            printf "\033[0;31m✘ Error:\033[0m Unsupported edition: \033[0;33m%s\033[0m.\n" "$edition"
-            printf "\033[0;34mℹ Supported editions for \033[0;36m%s\033[0;34m version \033[0;36m%s\033[0;34m are:\033[0m\n" "$dist" "$version"
-            for edition_item in "${edition_array[@]}"; do
-                printf "\033[0;34m- %s\033[0m\n" "$edition_item"
-            done
-            exit 1
-        fi
-        echo -e "\033[0;32m✔ Selected edition:\033[0m $edition"
-        select_build
-        return
+        done
+        error "Unsupported $noun: $preset."
+        printf '\033[0;34mℹ Supported options are:\033[0m\n' >&2
+        for i in "${items[@]}"; do
+            printf '\033[0;34m- %s\033[0m\n' "$i" >&2
+        done
+        exit 2
     fi
 
-    # Print the submenu.
-    clear
-    printf "\nSelect an edition:\n\n"
-    for i in "${!edition_array[@]}"; do
-        printf "%s: %s %s\n" "$((i + 1))" "$dist" "${edition_array[$i]}"
-    done
-    printf "\n"
-    prompt_user
+    if [[ "$auto_continue" == true ]]; then
+        usage_error "--auto-continue requires $option."
+    fi
 
-    # Select an edition.
     while true; do
-        read -r -p "Select an edition: " edition_input
-        if [[ "$edition_input" == [qQ] ]]; then
-            exit 0
-        elif [[ $edition_input == [bB] ]]; then
-            select_version
-            break
-        elif [[ $edition_input =~ ^[0-9]+$ ]] && ((edition_input >= 1 && edition_input <= ${#edition_array[@]})); then
-            edition=${edition_array[$((edition_input - 1))]}
-            select_build
-            break
-        else
-            printf "\n"
-            print_message warn "\033[33mInvalid Selection:\033[0m Enter a number between 1 and ${#edition_array[@]}.\n"
-            printf "\n"
+        if [[ "$show_menu" == true ]]; then
+            clear_screen
+            print_title
+            printf '\n%s:\n\n' "$heading"
+            for i in "${!items[@]}"; do
+                printf '%s: %s%s\n' "$((i + 1))" "$prefix" "${items[$i]}"
+            done
+            if [[ "$extra" == info ]]; then
+                printf '\nEnter \033[31mq\033[0m to quit or \033[34mi\033[0m for info.\n\n'
+            else
+                printf '\nEnter \033[32mb\033[0m to go back, or \033[31mq\033[0m to quit.\n\n'
+            fi
+            show_menu=false
         fi
+
+        if ! read -r -p "$prompt" input; then
+            fail "No input. Exiting."
+        fi
+        case "$input" in
+        [qQ])
+            exit 0
+            ;;
+        [bB])
+            if [[ "$extra" == back ]]; then
+                return 1
+            fi
+            ;;
+        [iI])
+            if [[ "$extra" == info ]]; then
+                show_info
+                show_menu=true
+                continue
+            fi
+            ;;
+        *)
+            if [[ "$input" =~ ^[0-9]+$ ]] && ((10#$input >= 1 && 10#$input <= ${#items[@]})); then
+                selection=${items[10#$input - 1]}
+                log_message info "Selected $noun: $selection"
+                return 0
+            fi
+            ;;
+        esac
+        printf '\n'
+        warn "Invalid Selection:" "Enter a number between 1 and ${#items[@]}."
+        printf '\n'
     done
 }
 
-# The *_vars and BUILD_VARS variables set here are read indirectly through
-# ${!var_file} when the Packer command is built.
-# shellcheck disable=SC2034
-select_build() {
-    if [[ "$dist" == *"Red Hat"* ]]; then
-        dist_name="rhel"
-    elif [[ "$dist" == *"SUSE"* ]]; then
-        dist_name="sles"
-    elif [[ "$dist" == *"Photon"* ]]; then
-        dist_name="photon"
-    elif [[ "$dist" == *"Windows Server"* ]]; then
-        dist_name="server"
-    elif [[ "$dist" == *"Windows Desktop"* ]]; then
-        dist_name="desktop"
+# Prints the build directory name for the distribution.
+dist_directory() {
+    case "$dist" in
+    *"Red Hat"*) printf 'rhel' ;;
+    *"SUSE"*) printf 'sles' ;;
+    *"Photon"*) printf 'photon' ;;
+    *"Windows Server"*) printf 'server' ;;
+    *"Windows Desktop"*) printf 'desktop' ;;
+    *) lower "${dist%% *}" ;;
+    esac
+}
 
-    else
-        dist_name_split="${dist%% *}"
-        #dist_name="${dist_name_split,,}"
-        dist_name=$(echo "$dist_name_split" | tr '[:upper:]' '[:lower:]')
+# Prints the Packer --only filter for the Windows edition, or nothing for other builds.
+only_filter() {
+    case "$dist|$edition" in
+    "Windows Server|Standard") printf 'vsphere-iso.windows-server-standard-dexp,vsphere-iso.windows-server-standard-core' ;;
+    "Windows Server|Datacenter") printf 'vsphere-iso.windows-server-datacenter-dexp,vsphere-iso.windows-server-datacenter-core' ;;
+    "Windows Desktop|Enterprise") printf 'vsphere-iso.windows-desktop-ent' ;;
+    "Windows Desktop|Professional") printf 'vsphere-iso.windows-desktop-pro' ;;
+    "$dist|") ;;
+    *) return 1 ;;
+    esac
+}
+
+# Prints the build_username from the configuration, or PKR_VAR_build_username when it is not set there.
+build_username() {
+    local value
+    value=$(sed -nE 's/^[[:space:]]*build_username[[:space:]]*=[[:space:]]*"([^"]*)".*/\1/p' "$config_path/build.pkrvars.hcl" | tail -n 1)
+    printf '%s' "${value:-${PKR_VAR_build_username:-}}"
+}
+
+validate_linux_username() {
+    local username=$1
+    if [[ ! "$username" =~ ^[a-z_]([a-z0-9_-]{0,31}|[a-z0-9_-]{0,30}'\$')$ ]]; then
+        error "Build username '$username' is invalid for Linux. Check the build.pkrvars.hcl file."
+        printf '\nUsername validation rules:\n\n' >&2
+        printf '1. It starts with a lowercase letter or an underscore.\n' >&2
+        printf '2. It continues with up to 31 lowercase letters, numbers, underscores, or hyphens,\n' >&2
+        printf '   or up to 30 of them followed by a dollar sign ($).\n' >&2
+        exit 1
     fi
+}
 
-    if [[ "$dist" == *"Ubuntu"* ]]; then
-        # Check if the suffix "-LTS" is already present before adding it.
-        if [[ "$version" != *"-LTS" ]]; then
-            version="${version//./-}-LTS"
-        else
-            version="${version//./-}"
+validate_windows_username() {
+    local username=$1 forbidden='"/\[]:;|=,+*?<>@' i
+    local valid=true
+    if ((${#username} > 20)) || [[ "$username" =~ ^[.\ ]+$ ]]; then
+        valid=false
+    fi
+    for ((i = 0; i < ${#forbidden}; i++)); do
+        if [[ "$username" == *"${forbidden:i:1}"* ]]; then
+            valid=false
         fi
-        INPUT_PATH="$script_path"/builds/$(echo "$os" | tr '[:upper:]' '[:lower:]')/$(echo "$dist_name" | tr '[:upper:]' '[:lower:]')/$(echo "$version" | tr '[:upper:]' '[:lower:]')/
-    else
-        version=$(echo "$version" | tr '[:upper:]' '[:lower:]')
-        INPUT_PATH="$script_path"/builds/$(echo "$os" | tr '[:upper:]' '[:lower:]')/$(echo "$dist_name" | tr '[:upper:]' '[:lower:]')/$version/
+    done
+    if [[ "$valid" != true ]]; then
+        error "Build username '$username' is invalid for Windows. Check the build.pkrvars.hcl file."
+        printf '\nUsername validation rules:\n\n' >&2
+        printf '1. It has at most 20 characters.\n' >&2
+        printf '2. It does not consist only of periods or spaces.\n' >&2
+        printf '3. It does not contain any of: %s\n' "$forbidden" >&2
+        exit 1
+    fi
+}
+
+# Set by prepare_build.
+build_path=""
+build_label=""
+packer_args=()
+
+# Resolves the selection to a build directory and Packer arguments. Returns 1 when the build
+# directory does not exist.
+prepare_build() {
+    local folder relative only file
+    local -a var_files=() missing=()
+
+    load_items list_build_files
+    if ((${#items[@]} < 2)); then
+        fail "No build files found for $dist $version $edition in $json_path."
+    fi
+    folder=$(lower "${items[0]}")
+    var_files=("${items[@]:1}")
+
+    relative="$(lower "$os")/$(dist_directory)/$folder"
+    build_path="$script_path/builds/$relative/"
+    build_label="$dist $version${edition:+ $edition}"
+    var_files+=("${relative//\//-}.pkrvars.hcl")
+
+    if [[ ! -d "$build_path" ]]; then
+        error "The build directory does not exist: $build_path"
+        return 1
     fi
 
-    if [ ! -d "$INPUT_PATH" ]; then
-        printf "\n\033[0;31m✘ Error:\033[0m The build directory does not exist: \033[0;34m%s\033[0m.\n" "$INPUT_PATH"
+    if ! only=$(only_filter); then
+        fail "Unsupported edition: $dist $edition"
+    fi
 
-        if [ "$auto_continue" = true ]; then
-            printf "\n\033[0;36m➜ Auto-continue is enabled. Skipping user prompt and retrying...\033[0m\n"
-            select_version  # Retry automatically.
-        else
+    for file in "${var_files[@]}"; do
+        if [[ ! -f "$config_path/$file" ]]; then
+            missing+=("$file")
+        fi
+    done
+    if ((${#missing[@]} > 0)); then
+        fail "Missing configuration files in $config_path: ${missing[*]}. Run ./config.sh to create them."
+    fi
+
+    packer_args=(build -force)
+    if [[ "$auto_continue" == true ]]; then
+        packer_args+=(-on-error=abort)
+    else
+        packer_args+=(-on-error=ask)
+    fi
+    if [[ "$debug" == true ]]; then
+        packer_args+=(-debug)
+    fi
+    if [[ -n "$only" ]]; then
+        packer_args+=("--only=$only")
+    fi
+    for file in "${var_files[@]}"; do
+        packer_args+=("-var-file=$config_path/$file")
+    done
+    packer_args+=("$build_path")
+}
+
+# Steps through the menus and the confirmation until a build is chosen. Going back clears the
+# selection for that menu and the ones after it.
+choose_build() {
+    local state=os has_editions=false action kind
+    while true; do
+        case "$state" in
+        os)
+            load_items list_os
+            select_item --os "$os" "Select a guest operating system" "Select a guest operating system: " "" info
+            os=$selection
+            state=dist
+            ;;
+        dist)
+            load_items list_dists
+            kind="$os distribution"
+            if [[ "$os" == Windows ]]; then
+                kind="$os type"
+            fi
+            if select_item --dist "$dist" "Select a $kind" "Enter a number of the $kind: " "" back; then
+                dist=$selection
+                state=version
+            else
+                os="" dist="" version="" edition=""
+                state=os
+            fi
+            ;;
+        version)
+            load_items list_versions
+            if select_item --version "$version" "Select a version" "Select a version: " "$dist " back; then
+                version=$selection
+                state=edition
+            else
+                dist="" version="" edition=""
+                state=dist
+            fi
+            ;;
+        edition)
+            load_items list_editions
+            has_editions=false
+            if ((${#items[@]} > 0)); then
+                has_editions=true
+                if select_item --edition "$edition" "Select an edition" "Select an edition: " "$dist " back; then
+                    edition=$selection
+                    state=confirm
+                else
+                    version="" edition=""
+                    state=version
+                fi
+            else
+                edition=""
+                state=confirm
+            fi
+            ;;
+        confirm)
+            if ! prepare_build; then
+                if [[ "$auto_continue" == true ]]; then
+                    exit 2
+                fi
+                while true; do
+                    printf '\nWould you like to go (\033[0;33mb\033[0m)ack or (\033[0;31mq\033[0m)uit?\n'
+                    read -r action || exit 1
+                    case "$action" in
+                    [bB]*) break ;;
+                    [qQ]*) exit 0 ;;
+                    esac
+                done
+                version="" edition=""
+                state=version
+                continue
+            fi
+
+            printf '\nBuild a %s virtual machine image for VMware vSphere?\n' "$build_label"
+            if [[ "$branch_name" == */* ]]; then
+                printf "\n\033[33mWarning:\033[0m The branch name contains a slash ('\033[33m/\033[0m') which may cause issues with the build.\n\n"
+            fi
+
+            if [[ "$auto_continue" == true ]]; then
+                printf '\nAuto-continue is enabled. Skipping user prompt...\n'
+                return 0
+            fi
+
             while true; do
-                printf "\nWould you like to go (\033[0;33mb\033[0m)ack or (\033[0;31mq\033[0m)uit?\n"
-                read -r action
-                case $action in
-                [bB]*)
-                    select_version  # Go back to version selection.
-                    break
+                read -r -p $'\nWould you like to (\e[32mc\e[0m)ontinue, go (\e[33mb\e[0m)ack, or (\e[31mq\e[0m)uit? ' action || exit 1
+                log_message info "User selected: $action"
+                case "$action" in
+                [cC]*)
+                    return 0
                     ;;
                 [qQ]*)
                     exit 0
                     ;;
+                [bB]*)
+                    if [[ "$has_editions" == true ]]; then
+                        edition=""
+                        state=edition
+                    else
+                        version="" edition=""
+                        state=version
+                    fi
+                    break
+                    ;;
                 esac
             done
-        fi
-    fi
-
-    BUILD_PATH=${INPUT_PATH#"${script_path}/builds/"}
-    BUILD_VARS="$(echo "${BUILD_PATH%/}" | tr -s '/' | tr '/' '-').pkrvars.hcl"
-
-    echo -e "\nBuild a $dist $version virtual machine image for VMware vSphere?"
-
-    # Check if the branch_contains_slash variable is true
-    if $branch_contains_slash; then
-      printf "\n\033[33mWarning:\033[0m The branch name contains a slash ('\033[33m/\033[0m') which may cause issues with the build.\n\n"
-    fi
-
-    while true; do
-        if [ "$auto_continue" = true ]; then
-            # If auto-continue is enabled, proceed without prompt.
-            printf "\nAuto-continue is enabled. Skipping user prompt...\n"
-            break
-        fi
-
-        prompt=$(printf '\nWould you like to (\e[32mc\e[0m)ontinue, go (\e[33mb\e[0m)ack, or (\e[31mq\e[0m)uit? ')
-        read -r -p "$prompt" action
-        log_message "info" "User selected: $action"
-        case $action in
-        [Cc]*)
-            # Continue the Build.
-            break
-            ;;
-        [Qq]*)
-            # Quit the script.
-            exit 0
-            ;;
-        [Bb]*)
-            # Go back to the menu.
-            select_version
-            break
             ;;
         esac
     done
-
-    printf "\nInitializing HashiCorp Packer and the required plugins...\n"
-    packer init "$INPUT_PATH"
-
-    # Check if the selected guest operating system is Linux or Windows.
-    if [[ "$os" == *"Linux"* ]]; then
-        vsphere_vars=$(jq -r --arg os "$os" --arg dist "$dist" --arg version "$version" '.os[] | select(.name == $os) | .distributions[] | select(.description == $dist) | .versions | to_entries[] | .value[] | select(.version == $version) | .build_files[0].vsphere' "$json_path")
-
-    elif [[ "$dist" == *"Windows"* ]]; then
-        vsphere_vars=$(jq -r --arg os "$os" --arg dist "$dist" --arg version "$version" --arg edition "$edition" '.os[] | select(.name == $os) | .types[] | select(.description == $dist) | .versions[$version][] | .editions[] | select(.edition == $edition) | .build_files[0].vsphere' "$json_path")
-    fi
-
-    if [[ "$os" == *"Linux"* ]]; then
-        build_vars=$(jq -r --arg os "$os" --arg dist "$dist" --arg version "$version" '.os[] | select(.name == $os) | .distributions[] | select(.description == $dist) | .versions | to_entries[] | .value[] | select(.version == $version) | .build_files[0].build' "$json_path")
-    elif [[ "$dist" == *"Windows"* ]]; then
-        build_vars=$(jq -r --arg os "$os" --arg dist "$dist" --arg version "$version" --arg edition "$edition" '.os[] | select(.name == $os) | .types[] | select(.description == $dist) | .versions[$version][] | .editions[] | select(.edition == $edition) | .build_files[0].build' "$json_path")
-    fi
-
-    if [[ "$os" == *"Linux"* ]]; then
-        ansible_vars=$(jq -r --arg os "$os" --arg dist "$dist" --arg version "$version" '.os[] | select(.name == $os) | .distributions[] | select(.description == $dist) | .versions | to_entries[] | .value[] | select(.version == $version) | .build_files[0].ansible' "$json_path")
-    elif [[ "$dist" == *"Windows"* ]]; then
-        ansible_vars=$(jq -r --arg os "$os" --arg dist "$dist" --arg version "$version" --arg edition "$edition" '.os[] | select(.name == $os) | .types[] | select(.description == $dist) | .versions[$version][] | .editions[] | select(.edition == $edition) | .build_files[0].ansible' "$json_path")
-    fi
-
-    if [[ "$os" == *"Linux"* ]]; then
-        proxy_vars=$(jq -r --arg os "$os" --arg dist "$dist" --arg version "$version" '.os[] | select(.name == $os) | .distributions[] | select(.description == $dist) | .versions | to_entries[] | .value[] | select(.version == $version) | .build_files[0].proxy' "$json_path")
-    elif [[ "$dist" == *"Windows"* ]]; then
-        proxy_vars=$(jq -r --arg os "$os" --arg dist "$dist" --arg version "$version" --arg edition "$edition" '.os[] | select(.name == $os) | .types[] | select(.description == $dist) | .versions[$version][] | .editions[] | select(.edition == $edition) | .build_files[0].proxy' "$json_path")
-    fi
-
-    if [[ "$os" == *"Linux"* ]]; then
-        common_vars=$(jq -r --arg os "$os" --arg dist "$dist" --arg version "$version" '.os[] | select(.name == $os) | .distributions[] | select(.description == $dist) | .versions | to_entries[] | .value[] | select(.version == $version) | .build_files[0].common' "$json_path")
-    elif [[ "$dist" == *"Windows"* ]]; then
-        common_vars=$(jq -r --arg os "$os" --arg dist "$dist" --arg version "$version" --arg edition "$edition" '.os[] | select(.name == $os) | .types[] | select(.description == $dist) | .versions[$version][] | .editions[] | select(.edition == $edition) | .build_files[0].common' "$json_path")
-    fi
-
-    if [[ "$os" == *"Linux"* ]]; then
-        network_vars=$(jq -r --arg os "$os" --arg dist "$dist" --arg version "$version" '.os[] | select(.name == $os) | .distributions[] | select(.description == $dist) | .versions | to_entries[] | .value[] | select(.version == $version) | .build_files[0].network' "$json_path")
-    fi
-
-    if [[ "$os" == *"Linux"* ]]; then
-        storage_vars=$(jq -r --arg os "$os" --arg dist "$dist" --arg version "$version" '.os[] | select(.name == $os) | .distributions[] | select(.description == $dist) | .versions | to_entries[] | .value[] | select(.version == $version) | .build_files[0].storage' "$json_path")
-    fi
-
-    if [[ "$dist" == *"Red Hat"* ]]; then
-        rhsm_vars=$(jq -r --arg os "$os" --arg dist "$dist" --arg version "$version" '.os[] | select(.name == $os) | .distributions[] | select(.description == $dist) | .versions | to_entries[] | .value[] | select(.version == $version) | .build_files[0].rhsm' "$json_path")
-    fi
-
-    if [[ "$dist" == *"SUSE"* ]]; then
-        scc_vars=$(jq -r --arg os "$os" --arg dist "$dist" --arg version "$version" '.os[] | select(.name == $os) | .distributions[] | select(.description == $dist) | .versions | to_entries[] | .value[] | select(.version == $version) | .build_files[0].scc' "$json_path")
-    fi
-
-    case "$dist" in
-    "Debian" | "Ubuntu Server" | "AlmaLinux OS" | "Rocky Linux" | "Oracle Linux" | "CentOS Stream" | "Fedora Server")
-        var_files=("vsphere_vars" "build_vars" "ansible_vars" "proxy_vars" "common_vars" "network_vars" "storage_vars" "BUILD_VARS")
-        validate_linux_username "$config_path/build.pkrvars.hcl"
-        printf "Starting the build of %s %s...\n\n" "$dist" "$version"
-        command="packer build -force -on-error=ask $debug_option"
-
-        for var_file in "${var_files[@]}"; do
-            command+=" -var-file=\"$config_path/${!var_file}\""
-        done
-
-        command+=" \"$INPUT_PATH\""
-
-        if [ $show_command -eq 1 ]; then
-            printf "\n"
-            printf "\n\033[32mThe following command is ran for this build:\033[0m\n"
-            printf "\n\e[34m%s\e[0m\n" "$command"
-        fi
-
-        eval "$command" || build_status=$?
-        ;;
-    "Red Hat Enterprise Linux")
-        var_files=("vsphere_vars" "build_vars" "ansible_vars" "proxy_vars" "common_vars" "network_vars" "storage_vars" "rhsm_vars" "BUILD_VARS")
-        validate_linux_username "$config_path/build.pkrvars.hcl"
-        printf "Starting the build of %s %s...\n\n" "$dist" "$version"
-        command="packer build -force -on-error=ask $debug_option"
-
-        for var_file in "${var_files[@]}"; do
-            command+=" -var-file=\"$config_path/${!var_file}\""
-        done
-
-        command+=" \"$INPUT_PATH\""
-
-        if [ $show_command -eq 1 ]; then
-            printf "\n"
-            printf "\n\033[32mThe following command is ran for this build:\033[0m\n"
-            printf "\n\e[34m%s\e[0m\n" "$command"
-        fi
-
-        eval "$command" || build_status=$?
-        ;;
-    "VMware Photon OS")
-        var_files=("vsphere_vars" "build_vars" "ansible_vars" "proxy_vars" "common_vars" "network_vars" "BUILD_VARS")
-        validate_linux_username "$config_path/build.pkrvars.hcl"
-        printf "Starting the build of %s %s...\n\n" "$dist" "$version"
-        command="packer build -force -on-error=ask $debug_option"
-
-        for var_file in "${var_files[@]}"; do
-            command+=" -var-file=\"$config_path/${!var_file}\""
-        done
-
-        command+=" \"$INPUT_PATH\""
-
-        if [ $show_command -eq 1 ]; then
-            printf "\n"
-            printf "\n\033[32mThe following command is ran for this build:\033[0m\n"
-            printf "\n\e[34m%s\e[0m\n" "$command"
-        fi
-
-        eval "$command" || build_status=$?
-        ;;
-    "SUSE Linux Enterprise Server")
-        var_files=("vsphere_vars" "build_vars" "ansible_vars" "network_vars" "proxy_vars" "common_vars" "scc_vars" "BUILD_VARS")
-        validate_linux_username "$config_path/build.pkrvars.hcl"
-        printf "Starting the build of %s %s...\n\n" "$dist" "$version"
-        command="packer build -force -on-error=ask $debug_option"
-
-        for var_file in "${var_files[@]}"; do
-            command+=" -var-file=\"$config_path/${!var_file}\""
-        done
-
-        command+=" \"$INPUT_PATH\""
-
-        if [ $show_command -eq 1 ]; then
-            printf "\n"
-            printf "\n\033[32mThe following command is ran for this build:\033[0m\n"
-            printf "\n\e[34m%s\e[0m\n" "$command"
-        fi
-
-        eval "$command" || build_status=$?
-        ;;
-    "Windows Server")
-        case "$edition" in
-        "Standard")
-            var_files=("vsphere_vars" "build_vars" "ansible_vars" "proxy_vars" "common_vars" "BUILD_VARS")
-            build_username=$(grep 'build_username' "$config_path/build.pkrvars.hcl" | awk -F '"' '{print $2}')
-            validate_windows_username "$config_path/build.pkrvars.hcl"
-            printf "Starting the build of %s %s...\n\n" "$dist" "$version"
-            command="packer build -force -on-error=ask $debug_option"
-            command+=" --only=vsphere-iso.windows-server-standard-dexp,vsphere-iso.windows-server-standard-core"
-
-            for var_file in "${var_files[@]}"; do
-                command+=" -var-file=\"$config_path/${!var_file}\""
-            done
-
-            command+=" \"$INPUT_PATH\""
-
-            if [ $show_command -eq 1 ]; then
-                printf "\n"
-                printf "\n\033[32mThe following command is ran for this build:\033[0m\n"
-                printf "\n\e[34m%s\e[0m\n" "$command"
-            fi
-
-            eval "$command" || build_status=$?
-            ;;
-        "Datacenter")
-            var_files=("vsphere_vars" "build_vars" "ansible_vars" "proxy_vars" "common_vars" "BUILD_VARS")
-            validate_windows_username "$config_path/build.pkrvars.hcl"
-            printf "Starting the build of %s %s...\n\n" "$dist" "$version"
-            command="packer build -force -on-error=ask $debug_option"
-            command+=" --only vsphere-iso.windows-server-datacenter-dexp,vsphere-iso.windows-server-datacenter-core"
-
-            for var_file in "${var_files[@]}"; do
-                command+=" -var-file=\"$config_path/${!var_file}\""
-            done
-
-            command+=" \"$INPUT_PATH\""
-
-            if [ $show_command -eq 1 ]; then
-                printf "\n"
-                printf "\n\033[32mThe following command is ran for this build:\033[0m\n"
-                printf "\n\e[34m%s\e[0m\n" "$command"
-            fi
-
-            eval "$command" || build_status=$?
-            ;;
-        *)
-            print_message error "Unsupported $dist edition: $edition"
-            ;;
-        esac
-        ;;
-    "Windows Desktop")
-        case "$edition" in
-        "Enterprise")
-            var_files=("vsphere_vars" "build_vars" "ansible_vars" "proxy_vars" "common_vars" "BUILD_VARS")
-            validate_windows_username "$config_path/build.pkrvars.hcl"
-            printf "Starting the build of %s %s...\n\n" "$dist" "$version"
-            command="packer build -force -on-error=ask $debug_option"
-            command+=" --only vsphere-iso.windows-desktop-ent"
-
-            for var_file in "${var_files[@]}"; do
-                command+=" -var-file=\"$config_path/${!var_file}\""
-            done
-
-            command+=" \"$INPUT_PATH\""
-
-            if [ $show_command -eq 1 ]; then
-                printf "\n"
-                printf "\n\033[32mThe following command is ran for this build:\033[0m\n"
-                printf "\n\e[34m%s\e[0m\n" "$command"
-            fi
-
-            eval "$command" || build_status=$?
-            ;;
-        "Professional")
-            var_files=("vsphere_vars" "build_vars" "ansible_vars" "proxy_vars" "common_vars" "BUILD_VARS")
-            validate_windows_username "$config_path/build.pkrvars.hcl"
-            printf "Starting the build of %s %s...\n\n" "$dist" "$version"
-            command="packer build -force -on-error=ask $debug_option"
-            command+=" --only vsphere-iso.windows-desktop-pro"
-
-            for var_file in "${var_files[@]}"; do
-                command+=" -var-file=\"$config_path/${!var_file}\""
-            done
-
-            command+=" \"$INPUT_PATH\""
-
-            if [ $show_command -eq 1 ]; then
-                printf "\n"
-                printf "\n\033[32mThe following command is ran for this build:\033[0m\n"
-                printf "\n\e[34m%s\e[0m\n" "$command"
-            fi
-
-            eval "$command" || build_status=$?
-            ;;
-        *)
-            print_message error "Unsupported edition: $dist $edition"
-            ;;
-        esac
-        ;;
-    *)
-        print_message error "Unsupported distribution: $dist"
-        ;;
-    esac
 }
 
-# Check if logging is enabled.
-if $logging_enabled; then
-    # If logging_path is empty, use the current directory
-    if [[ -z "$logging_path" ]]; then
-        logging_path=$(pwd)
+# Runs packer init and packer build for the prepared build, and sets build_status.
+run_build() {
+    local validate_username username
+    build_status=0
+
+    validate_username=validate_linux_username
+    if [[ "$os" == Windows ]]; then
+        validate_username=validate_windows_username
+    fi
+    username=$(build_username)
+    if [[ -z "$username" ]]; then
+        fail "build_username is not set in $config_path/build.pkrvars.hcl or PKR_VAR_build_username."
+    fi
+    "$validate_username" "$username"
+
+    printf '\nInitializing HashiCorp Packer and the required plugins...\n'
+    log_message info "Running: packer init $build_path"
+    packer init "$build_path" || build_status=$?
+    if ((build_status != 0)); then
+        error "packer init failed with exit status $build_status."
+        return 0
     fi
 
-    log_file="$logging_path/$logfile_filename"
-
-    # Check if the log file exists. If not, create it.
-    if [[ ! -f "$log_file" ]]; then
-        touch "$log_file"
-        log_message "info" "Log file created: $log_file."
+    printf 'Starting the build of %s...\n\n' "$build_label"
+    if [[ "$show_command" == true ]]; then
+        printf '\n\033[32mThe following command is run for this build:\033[0m\n\n'
+        printf '\033[34m'
+        printf '%q ' packer "${packer_args[@]}"
+        printf '\033[0m\n\n'
     fi
-fi
+    log_message info "Running: packer ${packer_args[*]}"
+    packer "${packer_args[@]}" || build_status=$?
+    if ((build_status != 0)); then
+        error "The build of $build_label failed with exit status $build_status."
+    else
+        log_message info "The build of $build_label finished."
+    fi
+}
 
-# Start the script with the selecting the guest operating system.
-build_status=0
-select_os
-
-# With --auto-continue, run a single noninteractive build and return Packer's
-# exit status, so CI pipelines fail when the build fails.
-if [ "$auto_continue" = true ]; then
-    exit "$build_status"
-fi
-
-# Prompt the user to continue or quit.
 while true; do
-    action=""
-    printf "Would you like to \033[0;32mc\033[0m)ontinue, or \033[0;31mq\033[0m)uit? %s" "$action"
-    # Exit if stdin is closed rather than looping on the prompt.
-    read -r action || exit "$build_status"
-    log_message "info" "User selected: $action"
-    case $action in
-    [cC]*)
-        select_os
-        ;;
-    [qQ]*) exit ;;
-    esac
+    choose_build
+    run_build
+
+    # With --auto-continue, run a single build and exit with the Packer exit status, so CI
+    # pipelines fail when the build fails.
+    if [[ "$auto_continue" == true ]]; then
+        exit "$build_status"
+    fi
+
+    while true; do
+        printf 'Would you like to (\033[0;32mc\033[0m)ontinue, or (\033[0;31mq\033[0m)uit? '
+        read -r action || exit "$build_status"
+        log_message info "User selected: $action"
+        case "$action" in
+        [cC]*)
+            os="" dist="" version="" edition=""
+            break
+            ;;
+        [qQ]*)
+            exit "$build_status"
+            ;;
+        esac
+    done
 done

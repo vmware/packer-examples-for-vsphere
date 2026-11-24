@@ -1,0 +1,93 @@
+# Linux|Debian|13| status=0
+packer [init] [<ROOT>/builds/linux/debian/13/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-storage.pkrvars.hcl] [-var-file=<CONFIG>/linux-debian-13.pkrvars.hcl] [<ROOT>/builds/linux/debian/13/]
+# Linux|Debian|12| status=0
+packer [init] [<ROOT>/builds/linux/debian/12/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-storage.pkrvars.hcl] [-var-file=<CONFIG>/linux-debian-12.pkrvars.hcl] [<ROOT>/builds/linux/debian/12/]
+# Linux|Ubuntu Server|26.04| status=0
+packer [init] [<ROOT>/builds/linux/ubuntu/26-04-lts/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-storage.pkrvars.hcl] [-var-file=<CONFIG>/linux-ubuntu-26-04-lts.pkrvars.hcl] [<ROOT>/builds/linux/ubuntu/26-04-lts/]
+# Linux|Ubuntu Server|24.04| status=0
+packer [init] [<ROOT>/builds/linux/ubuntu/24-04-lts/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-storage.pkrvars.hcl] [-var-file=<CONFIG>/linux-ubuntu-24-04-lts.pkrvars.hcl] [<ROOT>/builds/linux/ubuntu/24-04-lts/]
+# Linux|Ubuntu Server|22.04| status=0
+packer [init] [<ROOT>/builds/linux/ubuntu/22-04-lts/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-storage.pkrvars.hcl] [-var-file=<CONFIG>/linux-ubuntu-22-04-lts.pkrvars.hcl] [<ROOT>/builds/linux/ubuntu/22-04-lts/]
+# Linux|Red Hat Enterprise Linux|10| status=0
+packer [init] [<ROOT>/builds/linux/rhel/10/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-storage.pkrvars.hcl] [-var-file=<CONFIG>/rhsm.pkrvars.hcl] [-var-file=<CONFIG>/linux-rhel-10.pkrvars.hcl] [<ROOT>/builds/linux/rhel/10/]
+# Linux|Red Hat Enterprise Linux|9| status=0
+packer [init] [<ROOT>/builds/linux/rhel/9/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-storage.pkrvars.hcl] [-var-file=<CONFIG>/rhsm.pkrvars.hcl] [-var-file=<CONFIG>/linux-rhel-9.pkrvars.hcl] [<ROOT>/builds/linux/rhel/9/]
+# Linux|Red Hat Enterprise Linux|8| status=0
+packer [init] [<ROOT>/builds/linux/rhel/8/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-storage.pkrvars.hcl] [-var-file=<CONFIG>/rhsm.pkrvars.hcl] [-var-file=<CONFIG>/linux-rhel-8.pkrvars.hcl] [<ROOT>/builds/linux/rhel/8/]
+# Linux|Rocky Linux|10| status=0
+packer [init] [<ROOT>/builds/linux/rocky/10/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-storage.pkrvars.hcl] [-var-file=<CONFIG>/linux-rocky-10.pkrvars.hcl] [<ROOT>/builds/linux/rocky/10/]
+# Linux|Rocky Linux|9| status=0
+packer [init] [<ROOT>/builds/linux/rocky/9/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-storage.pkrvars.hcl] [-var-file=<CONFIG>/linux-rocky-9.pkrvars.hcl] [<ROOT>/builds/linux/rocky/9/]
+# Linux|Rocky Linux|8| status=0
+packer [init] [<ROOT>/builds/linux/rocky/8/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-storage.pkrvars.hcl] [-var-file=<CONFIG>/linux-rocky-8.pkrvars.hcl] [<ROOT>/builds/linux/rocky/8/]
+# Linux|AlmaLinux OS|10| status=0
+packer [init] [<ROOT>/builds/linux/almalinux/10/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-storage.pkrvars.hcl] [-var-file=<CONFIG>/linux-almalinux-10.pkrvars.hcl] [<ROOT>/builds/linux/almalinux/10/]
+# Linux|AlmaLinux OS|9| status=0
+packer [init] [<ROOT>/builds/linux/almalinux/9/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-storage.pkrvars.hcl] [-var-file=<CONFIG>/linux-almalinux-9.pkrvars.hcl] [<ROOT>/builds/linux/almalinux/9/]
+# Linux|AlmaLinux OS|8| status=0
+packer [init] [<ROOT>/builds/linux/almalinux/8/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-storage.pkrvars.hcl] [-var-file=<CONFIG>/linux-almalinux-8.pkrvars.hcl] [<ROOT>/builds/linux/almalinux/8/]
+# Linux|Oracle Linux|10| status=0
+packer [init] [<ROOT>/builds/linux/oracle/10/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-storage.pkrvars.hcl] [-var-file=<CONFIG>/linux-oracle-10.pkrvars.hcl] [<ROOT>/builds/linux/oracle/10/]
+# Linux|Oracle Linux|9| status=0
+packer [init] [<ROOT>/builds/linux/oracle/9/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-storage.pkrvars.hcl] [-var-file=<CONFIG>/linux-oracle-9.pkrvars.hcl] [<ROOT>/builds/linux/oracle/9/]
+# Linux|Oracle Linux|8| status=0
+packer [init] [<ROOT>/builds/linux/oracle/8/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-storage.pkrvars.hcl] [-var-file=<CONFIG>/linux-oracle-8.pkrvars.hcl] [<ROOT>/builds/linux/oracle/8/]
+# Linux|CentOS Stream|10| status=0
+packer [init] [<ROOT>/builds/linux/centos/10/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-storage.pkrvars.hcl] [-var-file=<CONFIG>/linux-centos-10.pkrvars.hcl] [<ROOT>/builds/linux/centos/10/]
+# Linux|CentOS Stream|9| status=0
+packer [init] [<ROOT>/builds/linux/centos/9/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-storage.pkrvars.hcl] [-var-file=<CONFIG>/linux-centos-9.pkrvars.hcl] [<ROOT>/builds/linux/centos/9/]
+# Linux|Fedora Server|45| status=0
+packer [init] [<ROOT>/builds/linux/fedora/45/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-storage.pkrvars.hcl] [-var-file=<CONFIG>/linux-fedora-45.pkrvars.hcl] [<ROOT>/builds/linux/fedora/45/]
+# Linux|SUSE Linux Enterprise Server|15| status=0
+packer [init] [<ROOT>/builds/linux/sles/15/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/scc.pkrvars.hcl] [-var-file=<CONFIG>/linux-sles-15.pkrvars.hcl] [<ROOT>/builds/linux/sles/15/]
+# Linux|VMware Photon OS|5| status=0
+packer [init] [<ROOT>/builds/linux/photon/5/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-photon-5.pkrvars.hcl] [<ROOT>/builds/linux/photon/5/]
+# Linux|VMware Photon OS|4| status=0
+packer [init] [<ROOT>/builds/linux/photon/4/]
+packer [build] [-force] [-on-error=abort] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/network.pkrvars.hcl] [-var-file=<CONFIG>/linux-photon-4.pkrvars.hcl] [<ROOT>/builds/linux/photon/4/]
+# Windows|Windows Server|2025|Standard status=0
+packer [init] [<ROOT>/builds/windows/server/2025/]
+packer [build] [-force] [-on-error=abort] [--only=vsphere-iso.windows-server-standard-dexp,vsphere-iso.windows-server-standard-core] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/windows-server-2025.pkrvars.hcl] [<ROOT>/builds/windows/server/2025/]
+# Windows|Windows Server|2025|Datacenter status=0
+packer [init] [<ROOT>/builds/windows/server/2025/]
+packer [build] [-force] [-on-error=abort] [--only=vsphere-iso.windows-server-datacenter-dexp,vsphere-iso.windows-server-datacenter-core] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/windows-server-2025.pkrvars.hcl] [<ROOT>/builds/windows/server/2025/]
+# Windows|Windows Server|2022|Standard status=0
+packer [init] [<ROOT>/builds/windows/server/2022/]
+packer [build] [-force] [-on-error=abort] [--only=vsphere-iso.windows-server-standard-dexp,vsphere-iso.windows-server-standard-core] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/windows-server-2022.pkrvars.hcl] [<ROOT>/builds/windows/server/2022/]
+# Windows|Windows Server|2022|Datacenter status=0
+packer [init] [<ROOT>/builds/windows/server/2022/]
+packer [build] [-force] [-on-error=abort] [--only=vsphere-iso.windows-server-datacenter-dexp,vsphere-iso.windows-server-datacenter-core] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/windows-server-2022.pkrvars.hcl] [<ROOT>/builds/windows/server/2022/]
+# Windows|Windows Server|2019|Standard status=0
+packer [init] [<ROOT>/builds/windows/server/2019/]
+packer [build] [-force] [-on-error=abort] [--only=vsphere-iso.windows-server-standard-dexp,vsphere-iso.windows-server-standard-core] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/windows-server-2019.pkrvars.hcl] [<ROOT>/builds/windows/server/2019/]
+# Windows|Windows Server|2019|Datacenter status=0
+packer [init] [<ROOT>/builds/windows/server/2019/]
+packer [build] [-force] [-on-error=abort] [--only=vsphere-iso.windows-server-datacenter-dexp,vsphere-iso.windows-server-datacenter-core] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/windows-server-2019.pkrvars.hcl] [<ROOT>/builds/windows/server/2019/]
+# Windows|Windows Desktop|11|Enterprise status=0
+packer [init] [<ROOT>/builds/windows/desktop/11/]
+packer [build] [-force] [-on-error=abort] [--only=vsphere-iso.windows-desktop-ent] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/windows-desktop-11.pkrvars.hcl] [<ROOT>/builds/windows/desktop/11/]
+# Windows|Windows Desktop|11|Professional status=0
+packer [init] [<ROOT>/builds/windows/desktop/11/]
+packer [build] [-force] [-on-error=abort] [--only=vsphere-iso.windows-desktop-pro] [-var-file=<CONFIG>/vsphere.pkrvars.hcl] [-var-file=<CONFIG>/build.pkrvars.hcl] [-var-file=<CONFIG>/ansible.pkrvars.hcl] [-var-file=<CONFIG>/proxy.pkrvars.hcl] [-var-file=<CONFIG>/common.pkrvars.hcl] [-var-file=<CONFIG>/windows-desktop-11.pkrvars.hcl] [<ROOT>/builds/windows/desktop/11/]

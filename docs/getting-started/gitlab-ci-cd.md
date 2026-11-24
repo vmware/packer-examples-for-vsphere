@@ -13,11 +13,11 @@ icon: material/gitlab
       make update-gitlab-ci
       ```
 
-2. Or use `gomplate` directly. This requires you to specify the configuration file (`build.yaml`),
+2. Or use `gomplate` directly. This requires you to specify the configuration file (`build-ci.yaml`),
    the template file (`build-ci.tmpl`), and the output file (`.gitlab-ci.yml`).
 
       ```shell
-      gomplate -c build.yaml -f build-ci.tmpl -o .gitlab-ci.yml
+      gomplate -c build-ci.yaml -f build-ci.tmpl -o .gitlab-ci.yml
       ```
 
 ???+ example "Example `.gitlab-ci.yml`"

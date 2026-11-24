@@ -102,17 +102,28 @@ You can also run the build script using command-line options to specify the oper
 
 You can use the following options with the script.
 
-| Option            | Short Form     | Description                                                     |
-| ----------------- | -------------- | --------------------------------------------------------------- |
-| `--help`          | `-h`, `-H`     | Display the help.                                               |
-| `--deps`          | `-d`, `-D`     | Run a dependency check before running a build.                  |
-| `--json`          | `-j`, `-J`     | Override the default JSON configuration file.                   |
-| `--show`          | `-s`, `-S`     | Display the command that the script uses to initialize a build. |
-| `--os`            |                | Specify the operating system (`Linux` or `Windows`).            |
-| `--dist`          |                | Specify the distribution (e.g., `Ubuntu Server`).               |
-| `--version`       |                | Specify the version of the distribution.                        |
-| `--edition`       |                | Specify the edition if applicable (e.g., `Standard`).           |
-| `--auto-continue` |                | Automatically continue without user prompts.                    |
+| Option            | Short Form | Description                                                                                 |
+| ----------------- | ---------- | ------------------------------------------------------------------------------------------- |
+| `--help`          | `-h`, `-H` | Display the help message.                                                                   |
+| `--deps`          | `-d`, `-D` | Check the required dependencies.                                                            |
+| `--json`          | `-j`, `-J` | Specify the project file. Defaults to `project.json` next to this script.                   |
+| `--os`            |            | Specify the guest operating system (e.g., `Linux`, `Windows`).                              |
+| `--dist`          |            | Specify the distribution (e.g., `Ubuntu Server`, `Windows Server`).                         |
+| `--version`       |            | Specify the version (e.g., `24.04`, `2025`).                                                |
+| `--edition`       |            | Specify the edition for Windows (e.g., `Standard`, `Datacenter`).                           |
+| `--auto-continue` |            | Build without prompts. Requires `--os`, `--dist`, `--version`, and `--edition` for Windows. |
+| `--show`          | `-s`, `-S` | Display the Packer command for the build.                                                   |
+| `--debug`         | `-b`, `-B` | Run Packer in debug mode.                                                                   |
+
+The script runs Packer from the project root, so you can start it from any directory. A relative
+`config_path` or `--json` path is resolved from the current directory.
+
+With `--auto-continue`, the script never prompts:
+
+- `--os`, `--dist`, and `--version` are required, and `--edition` is required for Windows.
+- Packer runs with `-on-error=abort`, so a failed build stops instead of waiting for input.
+- The script exits with the Packer exit status. It exits with `2` for an invalid option or
+  selection, or a missing build directory, and with `1` for other errors.
 
 ## Build Directly with Packer
 
@@ -130,7 +141,7 @@ packer init builds/windows/server/2022/.
 Build the specific machine image:
 
 ```shell
-packer build -force on-error=ask \
+packer build -force -on-error=ask \
     --only vsphere-iso.windows-server-standard-core \
     -var-file="config/build.pkrvars.hcl" \
     -var-file="config/common.pkrvars.hcl" \

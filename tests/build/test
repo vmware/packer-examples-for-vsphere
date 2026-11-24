@@ -1,0 +1,382 @@
+#!/usr/bin/env bats
+
+setup() {
+  ROOT="$(cd "$BATS_TEST_DIRNAME/../.." >/dev/null 2>&1 && pwd)"
+  GOLDEN="$BATS_TEST_DIRNAME/golden/commands.txt"
+  TMP="$(cd -P "$BATS_TEST_TMPDIR" && pwd)"
+  PROJECT="$TMP/project"
+  SCRIPT="$PROJECT/build.sh"
+  CONFIG="$TMP/config"
+  BIN="$TMP/bin"
+  CALLS="$TMP/calls.log"
+  export CALLS
+  mkdir -p "$PROJECT" "$BIN" "$TMP/work"
+  : >"$CALLS"
+
+  cp "$ROOT/build.sh" "$ROOT/project.json" "$PROJECT/"
+  # The script only checks that the build directories exist.
+  (cd "$ROOT" && find builds -type d) | while IFS= read -r dir; do mkdir -p "$PROJECT/$dir"; done
+  bash "$ROOT/config.sh" "$CONFIG" >/dev/null
+
+  sandbox_path
+  fake_tool packer 'Packer v1.16.2'
+  fake_tool ansible 'ansible [core 2.18.0]'
+}
+
+# Builds a PATH with only the tools the script needs, so packer and ansible are the fakes.
+sandbox_path() {
+  local tool
+  for tool in bash basename cat date dirname env find git jq mkdir readlink sed sort tail tr touch; do
+    ln -s "$(command -v "$tool")" "$BIN/$tool"
+  done
+  printf '#!/bin/sh\n' >"$BIN/clear"
+  chmod +x "$BIN/clear"
+}
+
+# Installs a fake tool that prints a version and records its other calls with the working
+# directory. FAKE_FAIL=<subcommand>:<status> makes that subcommand fail.
+fake_tool() {
+  cat >"$BIN/$1" <<EOF
+#!/usr/bin/env bash
+case "\$1" in --version | version) echo "$2"; exit 0 ;; esac
+{ printf '%s' "$1"; printf ' [%s]' "\$@"; printf '\n'; } >>"\$CALLS"
+printf 'cwd %s\n' "\$PWD" >>"\$CALLS"
+if [[ -n "\${FAKE_FAIL:-}" && "\$1" == "\${FAKE_FAIL%%:*}" ]]; then exit "\${FAKE_FAIL#*:}"; fi
+EOF
+  chmod +x "$BIN/$1"
+}
+
+# Runs the script with the sandbox PATH, the arguments, and stdin from $INPUT.
+build() {
+  run env PATH="$BIN" bash "$SCRIPT" "$@" <<<"${INPUT:-}"
+}
+
+# Runs a non-interactive build with the sandbox configuration.
+auto_build() {
+  build "$@" --auto-continue "$CONFIG"
+}
+
+# Prints the packer build calls, one per line.
+packer_builds() {
+  grep '^packer \[build\]' "$CALLS" || true
+}
+
+# Prints the menu numbers for Linux and Rocky Linux, which the menus list in project file order and
+# sorted order.
+menu_numbers() {
+  linux=$(jq -r '.os[].name' "$PROJECT/project.json" | grep -nx Linux | cut -d: -f1)
+  rocky=$(jq -r '.os[] | select(.name == "Linux") | .distributions[].description' "$PROJECT/project.json" |
+    sort | grep -nx 'Rocky Linux' | cut -d: -f1)
+}
+
+# Prints the commands for every build in project.json, with the paths replaced by <ROOT> and <CONFIG>.
+project_build_commands() {
+  local os dist ver edition
+  jq -r '.os[] | .name as $os | (if $os == "Windows" then
+      .types[] | .description as $d | .versions | to_entries[] | .key as $v | .value[] | .editions[]
+      | select(.enabled == "true") | [$os, $d, $v, .edition]
+    else
+      .distributions[] | .description as $d | .versions | to_entries[]
+      | select(any(.value[]; .enabled == "true")) | [$os, $d, .key, ""]
+    end) | join("|")' "$PROJECT/project.json" |
+    while IFS='|' read -r os dist ver edition; do
+      : >"$CALLS"
+      local args=(--os "$os" --dist "$dist" --version "$ver")
+      [[ -z "$edition" ]] || args+=(--edition "$edition")
+      env PATH="$BIN" bash "$SCRIPT" "${args[@]}" --auto-continue "$CONFIG" </dev/null >/dev/null 2>&1 &&
+        status=0 || status=$?
+      printf '# %s|%s|%s|%s status=%s\n' "$os" "$dist" "$ver" "$edition" "$status"
+      grep -v '^cwd ' "$CALLS" | sed -e "s|$PROJECT|<ROOT>|g" -e "s|$CONFIG|<CONFIG>|g"
+    done
+}
+
+@test "build.sh runs the expected Packer commands for every build in project.json" {
+  if [[ -n "${UPDATE_GOLDEN:-}" ]]; then
+    project_build_commands >"$GOLDEN"
+  fi
+  diff -u "$GOLDEN" <(project_build_commands)
+}
+
+@test "build.sh runs Packer from the project root when started from another directory" {
+  cd "$TMP/work"
+  auto_build --os Linux --dist "Rocky Linux" --version 9
+  [ "$status" -eq 0 ]
+  [ "$(grep -c '^cwd ' "$CALLS")" -eq 2 ]
+  [ "$(grep -cx "cwd $PROJECT" "$CALLS")" -eq 2 ]
+}
+
+@test "build.sh uses the project file next to the script and --json relative to the working directory" {
+  jq '.os |= map(select(.name == "Linux")) | .os[0].distributions |= map(select(.description == "Debian"))' \
+    "$PROJECT/project.json" >"$TMP/work/alt.json"
+  cd "$TMP/work"
+  auto_build --json alt.json --os Linux --dist "Rocky Linux" --version 9
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"Unsupported distribution: Rocky Linux."* ]]
+  [[ "$output" == *"- Debian"* ]]
+  auto_build --json alt.json --os Linux --dist Debian --version 13
+  [ "$status" -eq 0 ]
+}
+
+@test "build.sh --help works without the dependencies" {
+  rm "$BIN/packer" "$BIN/ansible" "$BIN/jq"
+  build --help
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Usage: build.sh [options] [config_path]"* ]]
+  [[ "$output" == *"--auto-continue"* ]]
+}
+
+@test "build.sh rejects an invalid option, a missing value, and extra arguments with status 2" {
+  build --edtion Standard
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"Invalid option: --edtion"* ]]
+  [[ "$output" == *"Usage"* ]]
+  build --os
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--os requires a value."* ]]
+  build one two
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"Expected one config_path, got 2."* ]]
+  [ ! -s "$CALLS" ]
+}
+
+@test "build.sh stops when Ansible is not installed" {
+  rm "$BIN/ansible"
+  auto_build --os Linux --dist "Rocky Linux" --version 9
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Ansible is not installed. 2.15.0 or later is required."* ]]
+  [ ! -s "$CALLS" ]
+}
+
+@test "build.sh stops when Packer is older than the project requires" {
+  fake_tool packer 'Packer v1.9.0'
+  auto_build --os Linux --dist "Rocky Linux" --version 9
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Packer: 1.9.0 is installed. 1.16.2 or later is required."* ]]
+}
+
+@test "build.sh --deps reports each dependency and continues to the build" {
+  auto_build --deps --os Linux --dist "Rocky Linux" --version 9
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"[✔]"*"Packer: 1.16.2 is installed. 1.16.2 or later is required."* ]]
+  [[ "$output" == *"[✔]"*"Ansible: 2.18.0 is installed. 2.15.0 or later is required."* ]]
+  [[ "$output" == *"[✘]"*"Terraform is not installed. 1.16.0 or later is required."* ]]
+  [[ "$output" == *"[✘]"*"Gomplate is not installed."* ]]
+  [ "$(packer_builds | wc -l)" -eq 1 ]
+}
+
+@test "build.sh reports a missing configuration directory or file" {
+  run env PATH="$BIN" bash "$SCRIPT" --os Linux --dist "Rocky Linux" --version 9 --auto-continue "$TMP/missing"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Configuration directory not found: $TMP/missing. Run ./config.sh to create it."* ]]
+  rm "$CONFIG/linux-rocky-9.pkrvars.hcl"
+  auto_build --os Linux --dist "Rocky Linux" --version 9
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Missing configuration files in $CONFIG: linux-rocky-9.pkrvars.hcl."* ]]
+  [ -z "$(packer_builds)" ]
+}
+
+@test "build.sh rejects an unsupported selection with status 2 and lists the supported values" {
+  auto_build --os Linux --dist "Rocky Linux" --version 7
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"Unsupported version: 7."* ]]
+  [[ "$output" == *"- 10"*"- 9"*"- 8"* ]]
+  auto_build --os Windows --dist "Windows Server" --version 2025 --edition Home
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"Unsupported edition: Home."* ]]
+  auto_build --os Windows --dist "Windows" --version 2025
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"Unsupported distribution: Windows."* ]]
+  [ ! -s "$CALLS" ]
+}
+
+@test "build.sh --auto-continue fails instead of showing a menu" {
+  auto_build --os Linux --dist "Rocky Linux"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--auto-continue requires --version."* ]]
+  auto_build --os Windows --dist "Windows Server" --version 2025
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--auto-continue requires --edition."* ]]
+  [ ! -s "$CALLS" ]
+}
+
+@test "build.sh --auto-continue exits with status 2 when the build directory is missing" {
+  rm -r "$PROJECT/builds/linux/rocky/9"
+  auto_build --os Linux --dist "Rocky Linux" --version 9
+  [ "$status" -eq 2 ]
+  [ "$(grep -c "The build directory does not exist: $PROJECT/builds/linux/rocky/9/" <<<"$output")" -eq 1 ]
+  [ ! -s "$CALLS" ]
+}
+
+@test "build.sh exits with the Packer exit status when the build fails" {
+  FAKE_FAIL=build:3 auto_build --os Linux --dist "Rocky Linux" --version 9
+  [ "$status" -eq 3 ]
+  [[ "$output" == *"The build of Rocky Linux 9 failed with exit status 3."* ]]
+}
+
+@test "build.sh does not build when packer init fails" {
+  FAKE_FAIL=init:4 auto_build --os Linux --dist "Rocky Linux" --version 9
+  [ "$status" -eq 4 ]
+  [[ "$output" == *"packer init failed with exit status 4."* ]]
+  [ -z "$(packer_builds)" ]
+}
+
+@test "build.sh warns about a slash in the branch name only when there is one" {
+  auto_build --os Linux --dist "Rocky Linux" --version 9
+  [[ "$output" != *"branch name contains a slash"* ]]
+  git -C "$PROJECT" init -q -b main
+  auto_build --os Linux --dist "Rocky Linux" --version 9
+  [[ "$output" != *"branch name contains a slash"* ]]
+  git -C "$PROJECT" checkout -q -b feature/test
+  auto_build --os Linux --dist "Rocky Linux" --version 9
+  [[ "$output" == *"branch name contains a slash"* ]]
+}
+
+@test "build.sh builds the selection made in the menus" {
+  menu_numbers
+  INPUT=$(printf '%s\n' "$linux" "$rocky" 1 c q)
+  build "$CONFIG"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Select a guest operating system:"* ]]
+  [[ "$output" == *"Select a Linux distribution:"* ]]
+  [[ "$output" == *"1: Rocky Linux 10"* ]]
+  [ "$(packer_builds | wc -l)" -eq 1 ]
+  [[ "$(packer_builds)" == *"[-on-error=ask]"*"/builds/linux/rocky/10/]" ]]
+}
+
+@test "build.sh asks for the edition of a Windows build" {
+  INPUT=$(printf '%s\n' 2 c q)
+  build --os Windows --dist "Windows Server" --version 2022 "$CONFIG"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Select an edition:"* ]]
+  [[ "$output" == *"1: Windows Server Standard"*"2: Windows Server Datacenter"* ]]
+  [[ "$(packer_builds)" == *"[--only=vsphere-iso.windows-server-datacenter-dexp,vsphere-iso.windows-server-datacenter-core]"* ]]
+}
+
+@test "build.sh does not build the old selection after going back" {
+  INPUT=$(printf '%s\n' b 1 c q)
+  build --os Linux --dist "Rocky Linux" --version 9 "$CONFIG"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Select a version:"* ]]
+  [ "$(packer_builds | wc -l)" -eq 1 ]
+  [[ "$(packer_builds)" == *"/builds/linux/rocky/10/]" ]]
+}
+
+@test "build.sh goes back to the version menu when the build directory is missing" {
+  rm -r "$PROJECT/builds/linux/rocky/9"
+  INPUT=$(printf '%s\n' b 1 c q)
+  build --os Linux --dist "Rocky Linux" --version 9 "$CONFIG"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"The build directory does not exist"* ]]
+  [ "$(packer_builds | wc -l)" -eq 1 ]
+  [[ "$(packer_builds)" == *"/builds/linux/rocky/10/]" ]]
+}
+
+@test "build.sh shows the menus again when continuing after a build" {
+  INPUT=$(printf '%s\n' c c q)
+  build --os Linux --dist "Ubuntu Server" --version 24.04 "$CONFIG"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Starting the build of Ubuntu Server 24.04..."* ]]
+  [[ "$output" == *"Select a guest operating system:"* ]]
+  [ "$(packer_builds | wc -l)" -eq 1 ]
+}
+
+@test "build.sh retries invalid menu input" {
+  INPUT=$(printf '%s\n' x 0 99 '1+1' q)
+  build "$CONFIG"
+  [ "$status" -eq 0 ]
+  [ "$(grep -c 'Invalid Selection:' <<<"$output")" -eq 4 ]
+}
+
+@test "build.sh exits with status 1 when the input ends in a menu" {
+  INPUT='' build "$CONFIG"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"No input. Exiting."* ]]
+  [ ! -s "$CALLS" ]
+}
+
+@test "build.sh keeps the config_path after showing the project information" {
+  menu_numbers
+  INPUT=$(printf '%s\n' i '' "$linux" "$rocky" 1 c q)
+  build "$CONFIG"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"License: BSD 2-Clause License"* ]]
+  [[ "$(packer_builds)" == *"[-var-file=$CONFIG/build.pkrvars.hcl]"* ]]
+}
+
+@test "build.sh rejects an invalid Linux build username" {
+  sed -i.bak 's/^build_username *=.*/build_username = "Packer"/' "$CONFIG/build.pkrvars.hcl"
+  auto_build --os Linux --dist "Rocky Linux" --version 9
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Build username 'Packer' is invalid for Linux."* ]]
+  [ ! -s "$CALLS" ]
+}
+
+@test "build.sh ignores a commented build username" {
+  printf '# build_username = "Old Name"\n' | cat - "$CONFIG/build.pkrvars.hcl" >"$TMP/build.pkrvars.hcl"
+  mv "$TMP/build.pkrvars.hcl" "$CONFIG/build.pkrvars.hcl"
+  auto_build --os Linux --dist "Rocky Linux" --version 9
+  [ "$status" -eq 0 ]
+}
+
+@test "build.sh uses PKR_VAR_build_username when the configuration does not set it" {
+  sed -i.bak '/^build_username/d' "$CONFIG/build.pkrvars.hcl"
+  PKR_VAR_build_username=Bad auto_build --os Linux --dist "Rocky Linux" --version 9
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Build username 'Bad' is invalid for Linux."* ]]
+  PKR_VAR_build_username=packer auto_build --os Linux --dist "Rocky Linux" --version 9
+  [ "$status" -eq 0 ]
+  auto_build --os Linux --dist "Rocky Linux" --version 9
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"build_username is not set in $CONFIG/build.pkrvars.hcl or PKR_VAR_build_username."* ]]
+}
+
+@test "build.sh applies the Windows rules to a Windows build username" {
+  sed -i.bak 's/^build_username *=.*/build_username = "Administrator"/' "$CONFIG/build.pkrvars.hcl"
+  auto_build --os Windows --dist "Windows Server" --version 2025 --edition Standard
+  [ "$status" -eq 0 ]
+  sed -i.bak 's/^build_username *=.*/build_username = "build\/user"/' "$CONFIG/build.pkrvars.hcl"
+  auto_build --os Windows --dist "Windows Server" --version 2025 --edition Standard
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Build username 'build/user' is invalid for Windows."* ]]
+  sed -i.bak 's/^build_username *=.*/build_username = "abcdefghijklmnopqrstu"/' "$CONFIG/build.pkrvars.hcl"
+  auto_build --os Windows --dist "Windows Server" --version 2025 --edition Standard
+  [ "$status" -eq 1 ]
+}
+
+@test "build.sh passes a config_path with quotes and \$(...) to Packer as a literal path" {
+  local config="$TMP/work/my \"config\" \$(touch injected)"
+  cp -R "$CONFIG" "$config"
+  cd "$TMP/work"
+  run env PATH="$BIN" bash "$SCRIPT" --os Linux --dist "Rocky Linux" --version 9 --auto-continue "$config"
+  [ "$status" -eq 0 ]
+  [ ! -e "$TMP/work/injected" ]
+  [ ! -e "$PROJECT/injected" ]
+  [[ "$(packer_builds)" == *"[-var-file=$config/build.pkrvars.hcl]"* ]]
+}
+
+@test "build.sh --debug and --show add -debug and print the command" {
+  auto_build --debug --show --os Linux --dist "Rocky Linux" --version 9
+  [ "$status" -eq 0 ]
+  [[ "$(packer_builds)" == *"[-on-error=abort] [-debug]"* ]]
+  [[ "$output" == *"The following command is run for this build:"*"packer build -force -on-error=abort -debug"* ]]
+}
+
+@test "build.sh writes the log file when logging is enabled" {
+  jq '.settings.build_logging_enabled = true | .settings.build_logging_path = "logs"' \
+    "$PROJECT/project.json" >"$TMP/project.json"
+  mv "$TMP/project.json" "$PROJECT/project.json"
+  cd "$TMP/work"
+  auto_build --os Linux --dist "Rocky Linux" --version 9
+  [ "$status" -eq 0 ]
+  grep -q '\[INFO\]: Running: packer build -force' "$TMP/work/logs/build.log"
+  grep -q '\[INFO\]: The build of Rocky Linux 9 finished.' "$TMP/work/logs/build.log"
+}
+
+@test "build.sh finds the project through a relative symbolic link" {
+  mkdir -p "$TMP/links"
+  ln -s ../project/build.sh "$TMP/links/build"
+  cd "$TMP/work"
+  run env PATH="$BIN" bash "$TMP/links/build" --os Linux --dist "Rocky Linux" --version 9 --auto-continue "$CONFIG"
+  [ "$status" -eq 0 ]
+  [[ "$(packer_builds)" == *"[$PROJECT/builds/linux/rocky/9/]" ]]
+}
