@@ -112,9 +112,10 @@
   `>= 0.6.7`.
   [#1079](https://github.com/vmware/packer-examples-for-vsphere/pull/1079),
   [#1138](https://github.com/vmware/packer-examples-for-vsphere/pull/1138)
-- Updates `required_versions` for `vmware/vsphere` to `>= 2.17.1`.
+- Updates `required_versions` for `vmware/vsphere` to `>= 2.18.0`.
   [#1102](https://github.com/vmware/packer-examples-for-vsphere/pull/1102),
-  [#1153](https://github.com/vmware/packer-examples-for-vsphere/pull/1153)
+  [#1153](https://github.com/vmware/packer-examples-for-vsphere/pull/1153),
+  [#1196](https://github.com/vmware/packer-examples-for-vsphere/pull/1196)
 - Updates `required_versions` for `hashicorp/hcp` to `~> 0.115.0`.
   [#1155](https://github.com/vmware/packer-examples-for-vsphere/pull/1155)
 - Updates `required_versions` for `terraform` to `>= 1.16.0`.
