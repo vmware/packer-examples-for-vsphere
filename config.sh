@@ -3,98 +3,122 @@
 # The term “Broadcom” refers to Broadcom Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: BSD-2-Clause
 
-set -e
+# Copies the example variables files to a configuration directory.
+#
+# Usage:
+#
+#   ./config.sh [config_path]
+#
+# - The default configuration directory is config/ next to this script.
+# - builds/<name>.pkrvars.hcl.example is copied to <name>.pkrvars.hcl.
+# - builds/<os>/<dist>/<version>/*.pkrvars.hcl.example is copied to <os>-<dist>-<version>.pkrvars.hcl.
+# - Existing .hcl files are moved to a backup.<timestamp> directory.
+# - Nothing changes until every example file is copied.
 
-follow_link() {
-    local file="$1"
-    while [[ -h "${file}" ]]; do
-        file="$(readlink "${file}")"
-        if [[ ! -e "${file}" ]]; then
-        echo "Error: Broken symbolic link: $1" >&2
-        exit 1
-        fi
+set -euo pipefail
+
+# Prints an error and exits.
+error() {
+    printf 'Error: %s\n' "$1" >&2
+    exit 1
+}
+
+# Prints the directory of this script, following symbolic links relative to their directory.
+script_dir() {
+    local file=$1 dir
+    while [[ -L "$file" ]]; do
+        dir=$(cd -P -- "$(dirname -- "$file")" && pwd)
+        file=$(readlink -- "$file")
+        [[ "$file" == /* ]] || file="$dir/$file"
     done
-    printf '%s\n' "${file}"
+    cd -P -- "$(dirname -- "$file")" && pwd
 }
 
 show_help() {
-    local exit_after="${1:-exit}"
-    local script_name="$(basename "$0")"
-
-    printf 'Usage: %s [options] [config_path]\n\n' "${script_name}"
+    printf 'Usage: %s [options] [config_path]\n\n' "$(basename -- "$0")"
     printf 'Options:\n'
     printf '  --help, -h, -H       Display this help message.\n\n'
     printf 'config_path:\n'
-    printf '  Path to save the generated configuration files. (Optional).\n\n'
-
-    if [[ -z "${input}" ]]; then
-        if [[ "${exit_after}" == "exit" ]]; then
-        exit 0
-        fi
-    fi
-    read -p "Press Enter to continue..."
+    printf '  Path to save the generated configuration files. (Optional).\n'
+    printf '  Defaults to config/ next to this script.\n'
 }
 
-script_path="$(dirname "$(follow_link "$0")")"
+script_path=$(script_dir "$0")
+builds_path="$script_path/builds"
 
-config_path="${1:-${script_path}/config}"
+while (($#)); do
+    case "$1" in
+    --help | -h | -H)
+        show_help
+        exit 0
+        ;;
+    --)
+        shift
+        break
+        ;;
+    -?*)
+        printf 'Error: Invalid option: %s\n\n' "$1" >&2
+        show_help >&2
+        exit 1
+        ;;
+    *)
+        break
+        ;;
+    esac
+done
 
-if [[ "$1" == "--help" || "$1" == "-h" || "$1" == "-H" ]]; then
-    show_help
-    exit 0
+if (($# > 1)); then
+    error "Expected one config_path, got $#."
+fi
+config_path=${1:-$script_path/config}
+
+shopt -s nullglob
+
+mkdir -p -- "$config_path" || error "Failed to create directory: $config_path"
+
+# Copy into a staging directory first, so a failed copy leaves the configuration as it was.
+staging=$(mktemp -d "$config_path/.config.XXXXXX") || error "Failed to create a staging directory in: $config_path"
+trap 'rm -rf -- "$staging"' EXIT
+
+# Copies an example file to the staging directory.
+stage() {
+    local src=$1 name=$2
+    if [[ -e "$staging/$name" ]]; then
+        error "More than one example file maps to $name: $src"
+    fi
+    cp -- "$src" "$staging/$name" || error "Failed to copy $src to $config_path/$name"
+}
+
+for src in "$builds_path"/*.pkrvars.hcl.example; do
+    stage "$src" "$(basename -- "$src" .example)"
+done
+
+while IFS= read -r -d '' src; do
+    dir=$(dirname -- "${src#"$builds_path"/}")
+    stage "$src" "${dir//\//-}.pkrvars.hcl"
+done < <(find "$builds_path" -mindepth 2 -type f -name '*.pkrvars.hcl.example' -print0)
+
+staged=("$staging"/*)
+if ((${#staged[@]} == 0)); then
+    error "No example files found in: $builds_path"
 fi
 
-if ! mkdir -p "${config_path}"; then
-    echo "Error: Failed to create directory: ${config_path}" >&2
-    exit 1
-fi
-
-backup_dir=""
-backup_taken=0
-
-if [[ -d "${config_path}" && "$(find "${config_path}" -maxdepth 1 -type f -name "*.hcl" -print -quit 2>/dev/null)" ]]; then
+existing=("$config_path"/*.hcl)
+if ((${#existing[@]} > 0)); then
     echo "> Backing up existing configurations..."
-    backup_time=$(date +%Y%m%d-%H%M%S)
-    backup_dir="${config_path}/backup.${backup_time}"
-    if ! mkdir -p "${backup_dir}"; then
-        echo "Error: Failed to create backup directory: ${backup_dir}" >&2
-        exit 1
-    fi
-    find "${config_path}" -maxdepth 1 -type f -name "*.hcl" -print0 |
-        xargs -0 -I {} bash -c 'if mv "$1" "${2}/$(basename "$1")"; then :; else echo "Error moving $1"; exit 1; fi' -- {} "${backup_dir}"
-    if [[ $? -ne 0 ]]; then
-        echo "Error: Some configuration files failed to move to backup" >&2
-        exit 1
-    fi
-    if ! rm -f "${config_path}"/*.hcl; then
-        echo "Error: Failed to remove original configuration files" >&2
-        exit 1
-    fi
-    backup_taken=1
-    echo "> Backup created: ${backup_dir}"
+    backup_dir="$config_path/backup.$(date +%Y%m%d-%H%M%S)"
+    # Keep an earlier backup taken in the same second.
+    backup_base=$backup_dir
+    n=1
+    while [[ -e "$backup_dir" ]]; do
+        backup_dir="$backup_base.$n"
+        n=$((n + 1))
+    done
+    mkdir -- "$backup_dir" || error "Failed to create backup directory: $backup_dir"
+    mv -- "${existing[@]}" "$backup_dir/" || error "Failed to move the existing configuration files to: $backup_dir"
+    echo "> Backup created: $backup_dir"
 fi
 
-cp -av "${script_path}"/builds/*.pkrvars.hcl.example "${config_path}" 2>&1 >/dev/null
+mv -- "${staged[@]}" "$config_path/" || error "Failed to move the configuration files to: $config_path"
 
-find "${script_path}"/builds/*/ -type f -name "*.pkrvars.hcl.example" -print0 | while IFS= read -r -d $'\0' srcfile; do
-    srcdir=$(dirname "${srcfile}" | tr -s /)
-    dstfile=$(echo "${srcdir#"${script_path}"/builds/}" | tr '/' '-')
-    cp -av "${srcfile}" "${config_path}/${dstfile}.pkrvars.hcl.example" 2>&1 >/dev/null
-    if [[ $? -ne 0 ]]; then
-        echo "Error: Failed to copy ${srcfile} to ${config_path}/${dstfile}.pkrvars.hcl.example" >&2
-    fi
-done
-
-if [[ $? -ne 0 ]]; then
-    echo "Error: One or more copy operations failed." >&2
-    exit 1
-fi
-
-for file in "${config_path}"/*.pkrvars.hcl.example; do
-    if ! mv -- "${file}" "${file%.example}"; then
-        echo "Error: Failed to rename ${file}" >&2
-        exit 1
-    fi
-done
-
-echo "> Configuration setup complete: ${config_path}"
+echo "> Configuration setup complete: $config_path"

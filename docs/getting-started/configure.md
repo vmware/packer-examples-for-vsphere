@@ -19,7 +19,10 @@ directory.
 ```
 
 The `config/` folder is the default folder. You can override the default by passing an alternate
-value as the first argument.
+value as the first argument. A relative path is resolved from the current directory.
+
+If the folder already has `.hcl` files, the script moves them to a `backup.<timestamp>` folder
+inside it first. If any example file fails to copy, the folder is left unchanged.
 
 You can set the region for your configuration and build scripts by passing the region code as an
 argument to the scripts. Here are examples for two regions:
