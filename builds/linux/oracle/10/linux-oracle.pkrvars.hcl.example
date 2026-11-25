@@ -21,5 +21,5 @@ vm_firmware = "efi-secure"
 // Removable Media Settings
 iso_datastore_path       = "iso/linux/oracle-linux/10/amd64"
 iso_content_library_item = "OracleLinux-R10-U2-x86_64-dvd"
-iso_file                  = "OracleLinux-R10-U2-x86_64-dvd.iso"
+iso_file                 = "OracleLinux-R10-U2-x86_64-dvd.iso"
 

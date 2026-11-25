@@ -8,8 +8,8 @@
 */
 
 // Guest Operating System Metadata
-vm_guest_os_name     = "debian"
-vm_guest_os_version  = "13.8"
+vm_guest_os_name    = "debian"
+vm_guest_os_version = "13.8"
 
 // Virtual Machine Guest Operating System Setting
 vm_guest_os_type = "other6xLinux64Guest"

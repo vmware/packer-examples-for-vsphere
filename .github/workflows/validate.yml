@@ -1,0 +1,101 @@
+---
+name: Validate
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - .github/workflows/validate.yml
+      - builds/**
+      - config.sh
+  pull_request:
+    paths:
+      - .github/workflows/validate.yml
+      - builds/**
+      - config.sh
+  workflow_dispatch:
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PACKER_VERSION: 1.16.2
+
+jobs:
+  packer:
+    name: Validate Packer
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@v3.4.0
+        with:
+          version: ${{ env.PACKER_VERSION }}
+      - name: Install Ansible
+        # packer validate runs ansible-playbook --version for the ansible provisioner.
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ansible-core
+      - name: Check Formatting
+        shell: bash
+        run: |
+          failed=0
+          packer fmt -check -diff -recursive builds || failed=1
+          # packer fmt skips the .example files, so check them through stdin.
+          while IFS= read -r -d '' file; do
+            packer fmt - <"$file" >"$RUNNER_TEMP/formatted"
+            if ! diff -u --label "$file" --label "$file (formatted)" "$file" "$RUNNER_TEMP/formatted"; then
+              failed=1
+            fi
+          done < <(git ls-files -z '*.pkrvars.hcl.example')
+          if [ "$failed" -ne 0 ]; then
+            echo "::error::Run packer fmt on the files above."
+            exit 1
+          fi
+      - name: Validate Builds
+        shell: bash
+        run: |
+          config="$RUNNER_TEMP/config"
+          # Validate with the configuration that config.sh creates from the example files.
+          ./config.sh "$config"
+          mapfile -t builds < <(find builds -name '*.pkr.hcl' ! -name 'variables*.pkr.hcl' -exec dirname {} \; | sort -u)
+          if [ "${#builds[@]}" -eq 0 ]; then
+            echo "::error::No builds found."
+            exit 1
+          fi
+          # Shared variables files are those not named after a build, e.g. vsphere.pkrvars.hcl.
+          mapfile -t shared < <(find builds -maxdepth 1 -name '*.pkrvars.hcl.example' -exec basename {} .example \; | sort)
+          failed=()
+          for build in "${builds[@]}"; do
+            echo "::group::${build}"
+            own="$config/$(tr / - <<<"${build#builds/}").pkrvars.hcl"
+            declared=$(sed -n 's/^variable "\([^"]*\)".*/\1/p' "$build"/*.pkr.hcl | sort -u)
+            args=()
+            # Pass a shared file only when the build declares one of its variables.
+            for file in "${shared[@]}"; do
+              if sed -n 's/^\([a-z0-9_]*\) *=.*/\1/p' "$config/$file" | grep -qxF "$declared"; then
+                args+=(-var-file="$config/$file")
+              fi
+            done
+            if [ ! -f "$own" ]; then
+              echo "::error::No variables file for ${build}: ${own#"$config"/}"
+              failed+=("$build")
+            elif ! packer init "$build" || ! packer validate "${args[@]}" -var-file="$own" "$build"; then
+              echo "::error::${build} is not valid."
+              failed+=("$build")
+            fi
+            echo "::endgroup::"
+          done
+          echo "Validated ${#builds[@]} builds; ${#failed[@]} failed."
+          if [ "${#failed[@]}" -ne 0 ]; then
+            printf 'Failed: %s\n' "${failed[@]}"
+            exit 1
+          fi

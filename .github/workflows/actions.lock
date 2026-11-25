@@ -20,6 +20,9 @@ workflows:
     '.github/workflows/tests.yml':
         - 'actions/checkout@v7.0.1'
         - 'hashicorp/setup-packer@v3.4.0'
+    '.github/workflows/validate.yml':
+        - 'actions/checkout@v7.0.1'
+        - 'hashicorp/setup-packer@v3.4.0'
 dependencies:
     'actions/checkout@v7.0.1':
         ref: 'v7.0.1'
