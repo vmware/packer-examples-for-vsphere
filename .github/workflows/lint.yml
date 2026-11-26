@@ -28,7 +28,6 @@ jobs:
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           DEFAULT_BRANCH: develop
-          LINTER_RULES_PATH: "."
           DISABLE_ERRORS: false
           FILTER_REGEX_EXCLUDE: '(^|/)build-ci\.tmpl$'
           IGNORE_GITIGNORED_FILES: true

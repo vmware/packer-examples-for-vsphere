@@ -23,6 +23,7 @@
 
   // Extension settings
   "extensions.ignoreRecommendations": true,
+  "markdownlint.configFile": ".github/linters/.markdown-lint.yml",
 
   // Reflow Markdown settings
   "reflowMarkdown.preferredLineLength": 100,
