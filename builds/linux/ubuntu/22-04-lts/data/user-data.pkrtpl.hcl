@@ -9,13 +9,18 @@
 autoinstall:
   version: 1
   apt:
-    geoip: true
+    geoip: false
     preserve_sources_list: false
     primary:
       - arches: [amd64, i386]
-        uri: http://archive.ubuntu.com/ubuntu
+        uri: https://archive.ubuntu.com/ubuntu
       - arches: [default]
-        uri: http://ports.ubuntu.com/ubuntu-ports
+        uri: https://ports.ubuntu.com/ubuntu-ports
+    security:
+      - arches: [amd64, i386]
+        uri: https://security.ubuntu.com/ubuntu
+      - arches: [default]
+        uri: https://ports.ubuntu.com/ubuntu-ports
   early-commands:
     - sudo systemctl stop ssh
   locale: ${vm_guest_os_language}
