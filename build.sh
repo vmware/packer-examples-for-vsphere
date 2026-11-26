@@ -707,7 +707,7 @@ select_build() {
 
     # Check if the branch_contains_slash variable is true
     if $branch_contains_slash; then
-      printf "\n\033[33mWarning:\033[0m The branch name contains a slash ('\033[33m/\033[0m') which may cause issues with the build.\n\n"
+        printf "\n\033[33mWarning:\033[0m The branch name contains a slash ('\033[33m/\033[0m') which may cause issues with the build.\n\n"
     fi
 
     while true; do
