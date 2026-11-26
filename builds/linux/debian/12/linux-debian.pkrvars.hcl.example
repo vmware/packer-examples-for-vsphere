@@ -5,6 +5,7 @@
 /*
     DESCRIPTION:
     Debian 12 build variables.
+    Packer Plugin for VMware vSphere: 'vsphere-iso' builder.
 */
 
 // Guest Operating System Metadata

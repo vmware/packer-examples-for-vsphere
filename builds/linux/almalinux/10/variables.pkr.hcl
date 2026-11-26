@@ -4,7 +4,8 @@
 
 /*
     DESCRIPTION:
-    AlmaLinux OS 9 variables using the Packer Builder for VMware vSphere (vsphere-iso).
+    AlmaLinux OS 9 input variables.
+    Packer Plugin for VMware vSphere: 'vsphere-iso' builder.
 */
 
 //  BLOCK: variable

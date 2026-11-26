@@ -4,7 +4,8 @@
 
 /*
     DESCRIPTION:
-    AlmaLinux OS 8 template using the Packer Builder for VMware vSphere (vsphere-iso).
+    AlmaLinux OS 8 build definition.
+    Packer Plugin for VMware vSphere: 'vsphere-iso' builder.
 */
 
 //  BLOCK: packer

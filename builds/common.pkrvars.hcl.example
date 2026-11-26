@@ -5,7 +5,7 @@
 /*
     DESCRIPTION:
     Common variables used for all builds.
-    - Variables are use by the source blocks.
+    - Variables are used by the source blocks.
 */
 
 // Virtual Machine Settings
