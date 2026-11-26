@@ -4,7 +4,7 @@
 
 /*
     DESCRIPTION:
-    Ubuntu Server 22.04 LTS build variables.
+    Ubuntu Server 22.04 LTS input variables.
     Packer Plugin for VMware vSphere: 'vsphere-iso' builder.
 */
 

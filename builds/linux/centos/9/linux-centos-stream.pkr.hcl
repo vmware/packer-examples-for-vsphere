@@ -4,7 +4,8 @@
 
 /*
     DESCRIPTION:
-    CentOS Stream 9 template using the Packer Builder for VMware vSphere (vsphere-iso).
+    CentOS Stream 9 build definition.
+    Packer Plugin for VMware vSphere: 'vsphere-iso' builder.
 */
 
 //  BLOCK: packer

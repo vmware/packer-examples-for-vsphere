@@ -4,7 +4,8 @@
 
 /*
     DESCRIPTION:
-    AlmaLinux OS 9 variables used by the Packer Plugin for VMware vSphere (vsphere-iso).
+    AlmaLinux OS 9 build variables.
+    Packer Plugin for VMware vSphere: 'vsphere-iso' builder.
 */
 
 // Guest Operating System Metadata
