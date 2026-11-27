@@ -29,19 +29,19 @@ data "vsphere_datastore" "datastore" {
   datacenter_id = data.vsphere_datacenter.datacenter.id
 }
 
-data "hcp_packer_image" "image" {
-  bucket_name    = var.hcp_packer_bucket_name
-  cloud_provider = "vsphere"
-  channel        = var.hcp_packer_channel
-  region         = var.vsphere_datacenter
+data "hcp_packer_artifact" "image" {
+  bucket_name  = var.hcp_packer_bucket_name
+  channel_name = var.hcp_packer_channel
+  platform     = "vsphere"
+  region       = var.vsphere_datacenter
 }
 
 data "vsphere_content_library" "content_library" {
-  name = split("/", data.hcp_packer_image.image.labels.content_library_destination)[0]
+  name = split("/", data.hcp_packer_artifact.image.labels.content_library_destination)[0]
 }
 
 data "vsphere_content_library_item" "content_library_item" {
-  name       = split("/", data.hcp_packer_image.image.labels.content_library_destination)[1]
+  name       = split("/", data.hcp_packer_artifact.image.labels.content_library_destination)[1]
   type       = "ovf"
   library_id = data.vsphere_content_library.content_library.id
 }
