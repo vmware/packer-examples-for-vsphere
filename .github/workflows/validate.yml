@@ -5,14 +5,26 @@ on:
   push:
     branches: [develop]
     paths:
+      - .github/linters/.ansible-lint*
       - .github/workflows/validate.yml
+      - .gitlab-ci.yml
+      - ansible/**
+      - build-ci.tmpl
+      - build-ci.yaml
       - builds/**
       - config.sh
+      - terraform/**
   pull_request:
     paths:
+      - .github/linters/.ansible-lint*
       - .github/workflows/validate.yml
+      - .gitlab-ci.yml
+      - ansible/**
+      - build-ci.tmpl
+      - build-ci.yaml
       - builds/**
       - config.sh
+      - terraform/**
   workflow_dispatch:
 
 concurrency:
@@ -23,7 +35,10 @@ permissions:
   contents: read
 
 env:
+  ANSIBLE_LINT_VERSION: 26.11.0
+  GOMPLATE_VERSION: 5.3.1
   PACKER_VERSION: 1.16.2
+  TERRAFORM_VERSION: 1.17.2
 
 jobs:
   packer:
@@ -97,5 +112,97 @@ jobs:
           echo "Validated ${#builds[@]} builds; ${#failed[@]} failed."
           if [ "${#failed[@]}" -ne 0 ]; then
             printf 'Failed: %s\n' "${failed[@]}"
+            exit 1
+          fi
+
+  terraform:
+    name: Validate Terraform
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4.0.1
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+      - name: Validate Modules
+        shell: bash
+        run: |
+          # Share the providers between the modules.
+          export TF_PLUGIN_CACHE_DIR="$RUNNER_TEMP/plugins"
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          mapfile -t modules < <(find terraform -name '*.tf' -exec dirname {} \; | sort -u)
+          if [ "${#modules[@]}" -eq 0 ]; then
+            echo "::error::No modules found."
+            exit 1
+          fi
+          failed=()
+          for module in "${modules[@]}"; do
+            echo "::group::${module}"
+            if ! terraform -chdir="$module" init -backend=false -input=false || ! terraform -chdir="$module" validate; then
+              echo "::error::${module} is not valid."
+              failed+=("$module")
+            fi
+            echo "::endgroup::"
+          done
+          echo "Validated ${#modules[@]} modules; ${#failed[@]} failed."
+          if [ "${#failed[@]}" -ne 0 ]; then
+            printf 'Failed: %s\n' "${failed[@]}"
+            exit 1
+          fi
+
+  ansible:
+    name: Lint Ansible
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install ansible-lint
+        # --include-deps also installs ansible-galaxy from ansible-core.
+        run: pipx install --include-deps "ansible-lint==${ANSIBLE_LINT_VERSION}"
+      - name: Install Collections
+        run: |
+          for requirements in ansible/*-requirements.yml; do
+            ansible-galaxy collection install -r "$requirements"
+          done
+      - name: Lint Playbooks and Roles
+        run: |
+          ansible-lint --offline --project-dir . \
+            -c .github/linters/.ansible-lint.yml \
+            ansible
+
+  gitlab-ci:
+    name: Check GitLab CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Gomplate
+        shell: bash
+        run: |
+          base="https://github.com/hairyhenderson/gomplate/releases/download/v${GOMPLATE_VERSION}"
+          cd "$RUNNER_TEMP"
+          curl -fsSLO "${base}/gomplate_linux-amd64"
+          curl -fsSLO "${base}/checksums-v${GOMPLATE_VERSION}_sha256.txt"
+          awk '$2 == "bin/gomplate_linux-amd64" { print $1 "  gomplate_linux-amd64" }' "checksums-v${GOMPLATE_VERSION}_sha256.txt" |
+            sha256sum --check --strict
+          install -m 0755 gomplate_linux-amd64 "$RUNNER_TEMP/gomplate"
+      - name: Check Generated File
+        shell: bash
+        run: |
+          # .gitlab-ci.yml is generated from build-ci.yaml and build-ci.tmpl (make update-gitlab-ci).
+          "$RUNNER_TEMP/gomplate" -c build-ci.yaml -f build-ci.tmpl -o "$RUNNER_TEMP/gitlab-ci.yml"
+          if ! diff -u --label .gitlab-ci.yml --label "generated" .gitlab-ci.yml "$RUNNER_TEMP/gitlab-ci.yml"; then
+            echo "::error::.gitlab-ci.yml is out of date. Run make update-gitlab-ci."
             exit 1
           fi
