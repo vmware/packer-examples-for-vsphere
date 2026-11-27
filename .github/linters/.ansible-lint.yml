@@ -1,7 +1,5 @@
 ---
-# Sets the kind of files to lint.
-kinds:
-  - playbook
+# Lint every playbook and role. The file kinds are detected from the layout of the ansible directory.
 
 # Skips the line-length rule.
 skip_list:
