@@ -29,15 +29,15 @@ data "vsphere_datastore" "datastore" {
   datacenter_id = data.vsphere_datacenter.datacenter.id
 }
 
-data "hcp_packer_image" "image" {
-  bucket_name    = var.hcp_packer_bucket_name
-  cloud_provider = "vsphere"
-  channel        = var.hcp_packer_channel
-  region         = var.vsphere_datacenter
+data "hcp_packer_artifact" "image" {
+  bucket_name  = var.hcp_packer_bucket_name
+  channel_name = var.hcp_packer_channel
+  platform     = "vsphere"
+  region       = var.vsphere_datacenter
 }
 
 data "vsphere_virtual_machine" "template" {
-  name          = data.hcp_packer_image.image.cloud_image_id
+  name          = data.hcp_packer_artifact.image.external_identifier
   datacenter_id = data.vsphere_datacenter.datacenter.id
 }
 
