@@ -1,0 +1,44 @@
+# © Broadcom. All Rights Reserved.
+# The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-2-Clause
+
+# EditorConfig: https://editorconfig.org
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{sh,ps1,psd1}]
+indent_size = 4
+
+# Still indented with 2 spaces (PS-07).
+[scripts/windows/windows-vmtools.ps1]
+indent_size = 2
+
+[Dockerfile]
+indent_size = 4
+
+[project.json]
+indent_size = 4
+
+[Makefile]
+indent_style = tab
+
+[*.md]
+# Two trailing spaces are a line break in Markdown.
+trim_trailing_whitespace = false
+# Lists and code blocks use their own indentation.
+indent_size = unset
+
+# Templates for guest operating system configuration files and the expected test output. Whitespace
+# can be significant, and templates inserted into another file have no final newline.
+[{builds/**/data/**,tests/*/golden/**}]
+indent_size = unset
+insert_final_newline = unset
+trim_trailing_whitespace = false
