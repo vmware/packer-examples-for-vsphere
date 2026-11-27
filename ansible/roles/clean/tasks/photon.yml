@@ -24,14 +24,14 @@
       - /tmp
       - /var/tmp
     file_type: any
-  register: find_tmp_directories
+  register: clean_find_tmp_directories
 
 # Tasks to clean the /tmp directories.
 - name: Cleaning the /tmp directories.
   ansible.builtin.file:
     path: "{{ item.path }}"
     state: absent
-  loop: "{{ find_tmp_directories.files }}"
+  loop: "{{ clean_find_tmp_directories.files }}"
   loop_control:
     label: "{{ item.path }}"
 
@@ -40,14 +40,14 @@
   ansible.builtin.find:
     paths: /etc/ssh
     patterns: ssh_host_*
-  register: find_ssh_host_keys
+  register: clean_find_ssh_host_keys
 
 # Tasks to clean the SSH host keys.
 - name: Cleaning the SSH host keys.
   ansible.builtin.file:
     path: "{{ item.path }}"
     state: absent
-  loop: "{{ find_ssh_host_keys.files }}"
+  loop: "{{ clean_find_ssh_host_keys.files }}"
   loop_control:
     label: "{{ item.path }}"
 

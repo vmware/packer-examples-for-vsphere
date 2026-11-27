@@ -22,11 +22,11 @@
 
     - name: Set full module path.
       ansible.builtin.set_fact:
-        full_module_path: "{{ base_sle_module_name }}/{{ base_sle_module_version }}/{{ base_sle_architecture }}"
+        base_full_module_path: "{{ base_sle_module_name }}/{{ base_sle_module_version }}/{{ base_sle_architecture }}"
 
-    - name: "Check if already registered for: {{ full_module_path }}."
+    - name: "Check if already registered for: {{ base_full_module_path }}."
       ansible.builtin.command: SUSEConnect --status-text
-      register: suseconnect_status
+      register: base_suseconnect_status
       changed_when: false
 
     - name: Installing cloud-init.

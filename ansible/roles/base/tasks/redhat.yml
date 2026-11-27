@@ -46,8 +46,8 @@
   when: ansible_facts['distribution'] == 'RedHat'
   ansible.builtin.command:
     cmd: subscription-manager status
-  register: result
-  failed_when: "'ERROR' in result.stderr"
+  register: base_result
+  failed_when: "'ERROR' in base_result.stderr"
   changed_when: false
 
 # Tasks for AlmaLinux.
