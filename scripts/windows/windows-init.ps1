@@ -7,16 +7,29 @@
     Enables Windows Remote Management on Windows builds.
 #>
 
+param (
+    [int]$NetworkTimeout = 300,
+    [int]$NetworkRetryInterval = 10
+)
+
 $ErrorActionPreference = 'Stop'
 
-# Set network connections provile to Private mode.
+# Wait until the network is identified, then set every connection profile to Private.
+# Continue after the timeout, so that Windows Remote Management is still configured.
 Write-Output 'Setting the network connection profiles to Private...'
-$connectionProfile = Get-NetConnectionProfile
-While ($connectionProfile.Name -eq 'Identifying...') {
-    Start-Sleep -Seconds 10
-    $connectionProfile = Get-NetConnectionProfile
+$stopwatch = [Diagnostics.Stopwatch]::StartNew()
+while ($true) {
+    $connectionProfiles = @(Get-NetConnectionProfile -ErrorAction SilentlyContinue)
+    if ($connectionProfiles.Count -gt 0 -and $connectionProfiles.Name -notcontains 'Identifying...') {
+        break
+    }
+    if ($stopwatch.Elapsed.TotalSeconds -ge $NetworkTimeout) {
+        Write-Warning "The network was not identified within $NetworkTimeout seconds."
+        break
+    }
+    Start-Sleep -Seconds $NetworkRetryInterval
 }
-Set-NetConnectionProfile -Name $connectionProfile.Name -NetworkCategory Private
+$connectionProfiles | Set-NetConnectionProfile -NetworkCategory Private
 
 # Set the Windows Remote Management configuration.
 Write-Output 'Setting the Windows Remote Management configuration...'
