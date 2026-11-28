@@ -25,6 +25,7 @@
 
 **Enhancement**:
 
+- Adds SUSE Linux Enterprise Server 16 to the project.
 - Adds Ubuntu Server 26.04 LTS to the project.
   [#1139](https://github.com/vmware/packer-examples-for-vsphere/pull/1139)
 - Adds Debian 13 to the project.
