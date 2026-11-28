@@ -25,9 +25,14 @@ winrm set winrm/config/service '@{AllowUnencrypted="true"}'
 winrm set winrm/config/service/auth '@{Basic="true"}'
 
 # Allow Windows Remote Management in the Windows Firewall.
+# Select the HTTP-In rules by name, because the display names are translated with the display language.
 Write-Output 'Allowing Windows Remote Management in the Windows Firewall...'
-netsh advfirewall firewall set rule group="Windows Remote Administration" new enable=yes
-netsh advfirewall firewall set rule name="Windows Remote Management (HTTP-In)" new enable=yes action=allow
+$firewallRules = Get-NetFirewallRule -Name 'WINRM-HTTP-In-TCP*'
+if ($firewallRules) {
+    $firewallRules | Enable-NetFirewallRule
+} else {
+    Write-Warning 'No Windows Remote Management (HTTP-In) firewall rules were found.'
+}
 
 # Reset the autologon count.
 # Reference: https://docs.microsoft.com/en-us/windows-hardware/customize/desktop/unattend/microsoft-windows-shell-setup-autologon-logoncount#logoncount-known-issue
